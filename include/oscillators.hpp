@@ -153,9 +153,17 @@ inline double dampedAmplitude(const DampedMotion& mo, double t) {
 //x = Ae^(-Beta*t) cos (omega_d * t + phi)
 inline double position(const DampedMotion& mo, double t) {
 	double omega_d = nat_damped_ang_freq(mo.osc);
-	return mo.ap.A * (-1.0 * mo.osc.beta * t) * std::cos(omega_d * t + mo.ap.phi);
+	return mo.ap.A * std::exp(-1.0 * mo.osc.beta * t) * std::cos(omega_d * t + mo.ap.phi);
 }
 
+inline double relaxation_time(const DampedMotion& mo) {
+	return 1.0 / mo.osc.beta; 
+}
 
+inline double relaxation_time(const DampedOscillator& d) {
+	return 1.0 / d.beta;
+}
+
+//Forced oscillations
 
 }
