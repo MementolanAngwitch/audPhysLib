@@ -64,7 +64,7 @@ struct Motion {
 };
 
 // x = x0 cos(omega * t) + (u/omega) sin (omega * t)
-inline double position(SimpleOscillator& o, InitialConditions& ic, double t) {
+inline double position(const SimpleOscillator& o, InitialConditions& ic, double t) {
 	double omega0 = nat_angular_freq(o);
 	return ic.x0 * std::cos(omega0 * t) + (ic.u0 / omega0) * std::sin(omega0 * t);
 }
@@ -114,7 +114,7 @@ inline double total_energy(const SimpleOscillator& o, InitialConditions ic) {
 	return kinetic_energy(o, ic.u0) + potential_energy(o, ic.x0);
 }
 
-//Damped oscilliations
+//Lightly Damped oscilliations
 
 struct DampedOscillator {
 	SimpleOscillator base;	
@@ -145,6 +145,11 @@ struct DampedMotion {
     }
 };
 
+inline AmplitudePhase to_amp_phase(const DampedOscillator& d, InitialConditions ic) {
+	double A2 = (ic.u0 + d.beta * ic.x0) / nat_damped_ang_freq(d);
+	return { std::sqrt(ic.x0 * ic.x0 + A2 * A2), std::atan2(-A2, ic.x0) };
+}
+
 // A = A * exp(-Beta * t)
 inline double dampedAmplitude(const DampedMotion& mo, double t) {
 	return mo.ap.A * std::exp(-1.0 * mo.osc.beta * t);
@@ -152,8 +157,7 @@ inline double dampedAmplitude(const DampedMotion& mo, double t) {
 
 //x = Ae^(-Beta*t) cos (omega_d * t + phi)
 inline double position(const DampedMotion& mo, double t) {
-	double omega_d = nat_damped_ang_freq(mo.osc);
-	return mo.ap.A * std::exp(-1.0 * mo.osc.beta * t) * std::cos(omega_d * t + mo.ap.phi);
+	return damped_amplitude(mo, t) * std::cos(nat_damped_ang_freq(mo.osc) * t + mo.ap.phi);
 }
 
 inline double relaxation_time(const DampedMotion& mo) {
@@ -164,6 +168,54 @@ inline double relaxation_time(const DampedOscillator& d) {
 	return 1.0 / d.beta;
 }
 
-//Forced oscillations
+//Forced oscillations, (w = omega, j is the complex constant)
+//complex displacement x = (1/jw) * Fe^{jwt}/(Rm + j(wm-s/w))
 
-}
+//complex speed u = (Fe^{jwt})/(Rm + j(wm - s/w))
+
+//impedance Zm = Rm + jXm
+
+//reactance Xm = wm - s/w
+
+//impedance magnitude Zm = (Rm^2 + (wm -s/w)^2)^(1/2)
+
+//phase angle theta = tan^-1 (Xm/Rm) = tan-1 ((wm-s/w)/Rm) use atan2
+
+//Zm = Zm e^(j theta)
+
+//Simplfiied impedance Zm = f/u, f = Fexp(jwt)
+
+//Simplified equations of motion
+// u = f/Zm
+// x = f/(j*w*Zm)
+
+//Actual (real) value
+// x = (F/(w*Zm) sin(wt - theta))
+// u = (F/Zm)cos(wt - theta)
+
+// Power Relations
+//instantanetous power (watts) PI_i  = (F^2/Zm) cos(wt) * cos(wt - theta)
+//average power (watts)        PI = F^2/(2*Zm) * cos(theta) = (F^2Rm)/(2Zm^2) 
+
+//Mechanical Resonance 
+//w0 is where Xm vanishes and Zm = Rm
+//Resonance values
+// u_res = (F/Rm) cos(w0 t)
+// x_res = (F/(w0*Rm)) sin(w0 * t)
+// Quality factor Q = w0/(w_u - w_l)
+// w_u and w_l are the two angular frequenices above and below resoance at which avg is half its resonance value
+// Q = w0m /Rm
+// Q = w0/(2beta)
+// Q = 1/2 w0 t (t = relaxation time)
+
+//Linear Combination
+//Same angular frequencies
+// x = A cos(wt+phi)
+// A = [(SUM(An*cos(phi_n))^2)^2 + (SUM(A_n*sin(phi_n)))^2]^(1/2)
+// tan(phi) = SUM(A_n * sin(phi_n)) / SUM(A_n * cos(phi_n))
+// different angular frequenices
+// w2 = w1 + delta(w)
+// x = Ae^(j(w1*t + phi))
+// A = [A1^2 +A2^2 + 2A1A2 * cos(phi1 - phi2 - delta*w*t)]^1/2
+// tan(phi) = (A1 * sin(phi_1) + A2 * sin(phi_2 + delta*w*t))/(A1 * cos(phi_1) + A2 cos(phi_2 + delta*w*t))
+} 
