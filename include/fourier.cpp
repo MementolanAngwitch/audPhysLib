@@ -2,24 +2,31 @@
 
 #include "fourier.hpp"
 
+namespace audphys{
+
+namespace {
+std::complex<double> dft_helper(const cvec& x, size_t k) {
+	const std::size_t N = x.size();
+	std::complex<double> sum{0.0,0.0};
+	for(std::size_t n = 0; n < N; ++n) {
+		double angle = 2.0 * std::numbers::pi * static_cast<double>(((k*n)%N)/static_cast<double>(N));
+		sum += x[n] * std::polar(1.0,-angle);
+	}
+	return sum;
+}	
+
+}
+
 //X[k] = sum_[n=0,N-1] x[n] * (cos(2pi/N * kn) - jsin(2pi/N * kn))
 cvec dft(const cvec& x) {
-	int N = x.size();
-	cvec output(N,0.0);
+	std::size_t N = x.size();
+	cvec output(N);
 
-	for (int k = 0; k < N; ++k) {
-		output[k] = dft_helper(x,k, N);
+	for (std::size_t k = 0; k < N; ++k) {
+		output[k] = dft_helper(x,k);
 	}
 
 	return output;
 }
 
-std::complex<double> dft_helper(const cvec& x, int k, int N) {
-	std::complex<double> out = {0.0,0.0};
-	for(int n = 0; n < N-1; ++n) {
-		std::complex<double> entry = {std::cos((2*pi/N) * k*n ),-1 * std::sin((2*pi/N) * k*n )}; 
-		entry = entry * x[n];
-		out += entry;
-	}
-	return out;
-}	
+}
