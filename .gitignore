@@ -1,2 +1,15 @@
+build/
 *.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
 tests/
+.idea/
+*.swp
+.DS_Store
+*.wav
+*.png
