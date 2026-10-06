@@ -62,6 +62,102 @@ double extended_shape(F y0, double L, End left, End right, double xi) {
 	const bool odd_cycle = std::fmod(std::abs(k), 2.0) == 1.0;
 }
 
+// String released AT REST from shape y0 (a pluck), ideal ends:
+// y(x,t) = 1/2 [ Y0(x - ct) + Y0(x + ct) ] 
+
+// ==== Forced vibration of an infinite string ==================================
+// Only an outgoing wave: u(x) = (F / rho_L c) e^{-jkx},  input impedance Z_m0 = rho_L c
+
+// Velocity phasor at x 
+
+// Average power input F^2 / (2 rho_L c) 
+
+// ==== Forced vibration of a string of finite length ===========================
+// y(x,t) = A e^{j(wt - kx)} + B e^{j(wt + kx)}, with A, B fixed by the two ends:
+//   at x = 0:  F = -T dy/dx                       (the driving force)
+//   at x = L:  -T dy/dx = Z_L u                   (the load, impedance Z_L)
+// Writing z = Z_L / (rho_L c) covers every termination in the chapter:
+//   free end z = 0, mass load z = j w m / rho_L c, resistance load z = R_m / rho_L c,
+//   fixed end z -> infinity (separate functions below, since z = infinity can't be computed).
+
+struct WaveAmplitudes {
+	cplx A;		// wave travelling away from the driver   [m]
+	cplx B;		// wave reflected back from the load      [m]
+};
+
+// Load impedances
+
+// A = -(F e^{jkL} / 2 w rho_L c) (1 + z) / (sin kL - j z cos kL)
+// B = -(F e^{-jkL} / 2 w rho_L c) (1 - z) / (sin kL - j z cos kL)
+
+// Fixed end (z -> infinity): y = F / (2jkT cos kL) [ e^{j(wt + k(L-x))} - e^{j(wt - k(L-x))} ]
+
+// Displacement phasor y(x) = A e^{-jkx} + B e^{jkx} 
+
+// Velocity phasor u(x) = j w y(x) 
+
+// Input impedance Z_m0 = F / u(0) = rho_L c (z + j tan kL) / (1 + j z tan kL) 
+
+// Fixed end: Z_m0 = -j rho_L c cot kL 
+
+// Average power delivered by the driver: (F^2 / 2) Re{Z_m0} / |Z_m0|^2 
+
+// ---- Forced, fixed string: resonances, nodes, antinodes ----
+
+// Resonance (Z_m0 = 0): f = (2n - 1) c / (4L), n = 1, 2, ...
+ 
+// Anti-resonance (|Z_m0| infinite): f = n c / (2L), n = 1, 2, ...
+
+// Nodes: x_q = L - q lambda/2, q = 0, 1, 2, ... while x_q >= 0 
+
+// Antinodes: x_q = L - (2q - 1) lambda/4, q = 1, 2, ... while x_q >= 0 
+
+
+// ---- Forced, mass-loaded string: resonances ----
+
+namespace detail {
+	// Bisection: a root of f in [a, b], given f(a) and f(b) have opposite signs (or one is zero)
+}
+
+// Resonance: tan kL = -(m / m_s) kL, m_s = rho_L L. No formula exists, so it is solved numerically,
+// written as sin(kL) + (m/m_s) kL cos(kL) = 0 to avoid tan's poles. The n-th root lies between
+// kL = (n - 1/2) pi (an infinitely heavy mass, a fixed end) and kL = n pi (no mass, a free end).
+
+
+// ==== Normal modes of the fixed, fixed string ==================================
+
+struct Mode {
+	int n;			// mode number, 1, 2, ...
+	double A;		// cosine amplitude   [m]
+	double B;		// sine amplitude     [m]
+	double beta;	// decay rate         [1/s], 0 = undamped
+};
+ 
+struct NormalModes {
+	String s;					// the string these modes belong to
+	std::vector<Mode> modes;
+};
+
+// k_n = n pi / L  
+
+// w_n = n pi c / L 
+
+// Build the modes from initial displacement y0(x) and initial velocity v0(x).
+// The integrals use the midpoint rule with n_points sub-intervals.
+
+// Plucked: released at rest from y0
+
+// Struck: starts straight, with initial velocity v0
+
+// y(x,t) 
+
+// u(x,t) = dy/dt 
+
+// dy/dx (x,t): the string's slope. -T dy/dx is the transverse force the string exerts. 
+
+
+
+
 // B.C Fixed: y(x,t) = y1(ct-x) - y1(ct+x)
 // B.C Free:  y(x,t) = y1(ct-x) + y1(ct+x)
 
