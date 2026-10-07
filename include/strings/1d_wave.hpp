@@ -52,7 +52,7 @@ inline double reflection_sign(End e) {
 // Moving 2L along the line multiplies the shape by (left sign)(right sign).
 
 template<class F>
-double extended_shape(F y0, double L, End left, End right, double xi) {
+inline double extended_shape(F y0, double L, End left, End right, double xi) {
 	const double bc = reflection_sign(right);
 	const double flip_per_cycle = reflection_sign(left) * bc;
 
@@ -60,17 +60,37 @@ double extended_shape(F y0, double L, End left, End right, double xi) {
 	const double v = xi -(k * 2 * L)         // position within the cycle 
 
 	const bool odd_cycle = std::fmod(std::abs(k), 2.0) == 1.0;
+	const double cycle_sign = (flip_per_cycle < 0 && odd_cycle) ? -1.0 : 1.0;
+
+	const double y = (v <= L) ? y0(v) | y0(2*L - v);
+	return y * cycle_sign;
 }
 
 // String released AT REST from shape y0 (a pluck), ideal ends:
 // y(x,t) = 1/2 [ Y0(x - ct) + Y0(x + ct) ] 
 
+template<class F, class G>
+inline double position(F y0, F y1, const String& s, End left, End right, double x, double t) {
+	const double L = s.length; 
+	const double c = wave_speed(s);
+	return 1/2 * (extended_shape(y0, L, left, right, x - c*t) + extended_shape(y1,L,left,right,x+c*t));
+}
+
 // ==== Forced vibration of an infinite string ==================================
 // Only an outgoing wave: u(x) = (F / rho_L c) e^{-jkx},  input impedance Z_m0 = rho_L c
+inline double outgoing_wave(const String& s, double f, double w, double x) {
+	const double rho = s.lin_density;
+	const double c = wave_speed(s);
+	const double k = wave_number(s,w);
 
-// Velocity phasor at x 
+	return (F / (rho * c)) * std::polar(1, -1.0 * k * x )
+}
 
 // Average power input F^2 / (2 rho_L c) 
+
+inline double infinite_string_power(const String& s, double f) {
+	return (f * f) /  (2 * characteristic_impedance(s));
+}
 
 // ==== Forced vibration of a string of finite length ===========================
 // y(x,t) = A e^{j(wt - kx)} + B e^{j(wt + kx)}, with A, B fixed by the two ends:
@@ -81,26 +101,64 @@ double extended_shape(F y0, double L, End left, End right, double xi) {
 //   fixed end z -> infinity (separate functions below, since z = infinity can't be computed).
 
 struct WaveAmplitudes {
-	cplx A;		// wave travelling away from the driver   [m]
-	cplx B;		// wave reflected back from the load      [m]
+	std::complex<double> A;		// wave travelling away from the driver   [m]
+	std::complex<double> B;		// wave reflected back from the load      [m]
 };
 
-// Load impedances
+// Load impedances: mass jwm, resistance rm
 
-// A = -(F e^{jkL} / 2 w rho_L c) (1 + z) / (sin kL - j z cos kL)
-// B = -(F e^{-jkL} / 2 w rho_L c) (1 - z) / (sin kL - j z cos kL)
+inline std::complex<double> mass_impedance(double w, double m) {
+	return {0.0, w*m};
+}
 
-// Fixed end (z -> infinity): y = F / (2jkT cos kL) [ e^{j(wt + k(L-x))} - e^{j(wt - k(L-x))} ]
+inline std::complex<double> resistance_impedance(double rm) {
+	return {0.0, rm}
+}
+
+// Fixed forced finite string
+// A = (Fe^jkl) / (2jkTcoskL)
+// B = -(Fe^-jkl) / (2jkTcoskL)
+
+inline WaveAmplitudes loaded_amplitudes(const String& s, double F, double w) {
+	const double k = wave_number(s);
+	const double L = s.length;
+	const double T = s.tension;
+	const std::complex<double> num = F  * std::polar(1.0, k * L) 
+	const std::complex<double> num2 = F * std::polar(-1.0, k*L)
+	const std::complex<double> den = std::complex(0, 2.0 * k * T * cos(k*L));
+
+	return {num / den , num2 / den};
+}
 
 // Displacement phasor y(x) = A e^{-jkx} + B e^{jkx} 
 
+inline std::complex<double> displacement_phasor_forced_fixed_string(const String& s, const WaveAmplitudes& amps, const double x) {
+	const double k = wave_number(s);
+	return amps.A * std::polar(1.0,-1.0 * k *x) + amps.B * std::polar(1.0,k * x);
+}
+
 // Velocity phasor u(x) = j w y(x) 
 
-// Input impedance Z_m0 = F / u(0) = rho_L c (z + j tan kL) / (1 + j z tan kL) 
+inline std::complex<double> velo_phasor_forced_fixed_string(const String& s, double F, double w, double x) {
+	std::complex<double> amp = loaded_amplitudes(s, F, w);
+	return { 0.0, w * displacement_phasor_forced_fixed_string(s, amps, x) };
+}
 
 // Fixed end: Z_m0 = -j rho_L c cot kL 
 
+inline std::complex<double> input_impedance_forced_fixed_string(const String& s) {
+	const double rho = s.lin_density; 
+	const double c = wave_speed(s);
+	const double k = wave_number(k);
+	return { 0.0, rho * c * (std::cos(k*L) / std::sin(k*L)) };
+}
+
+
 // Average power delivered by the driver: (F^2 / 2) Re{Z_m0} / |Z_m0|^2 
+
+inline double input_power_fixed_forced(const String& s, double F, double w) {
+	const std::complex<double> input_impedance_forced_fixed_string(s,w)
+}
 
 // ---- Forced, fixed string: resonances, nodes, antinodes ----
 
