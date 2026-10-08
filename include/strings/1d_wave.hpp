@@ -163,12 +163,28 @@ inline double input_power_fixed_forced(const String& s, double F, double w) {
 // ---- Forced, fixed string: resonances, nodes, antinodes ----
 
 // Resonance (Z_m0 = 0): f = (2n - 1) c / (4L), n = 1, 2, ...
+
+inline double forced_fixed_res_freq(const String& s, std::size_t n) {
+	return ((2.0 * n - 1) * wave_speed(s)) / (4.0 * s.length);
+}
  
 // Anti-resonance (|Z_m0| infinite): f = n c / (2L), n = 1, 2, ...
 
+inline double forced_fixed_anti_res_freq (const String& s, std::size_t n) {
+	return (n*wave_speed(s)) / (2.0 * s.length);
+}
+
 // Nodes: x_q = L - q lambda/2, q = 0, 1, 2, ... while x_q >= 0 
 
+inline double forced_fixed_node_pos(const String& s, std::size_t q, double w) {
+	return s.length - q * wavelength(s,w) / 2;
+}
+
 // Antinodes: x_q = L - (2q - 1) lambda/4, q = 1, 2, ... while x_q >= 0 
+
+inline double forced_fixed_anti_node_pos(const String& s, std::size_t q, double w) {
+	return s.length - (2.0 * (q - 1) * wavelength(s,w)) / 4.0; 
+}
 
 
 // ---- Forced, mass-loaded string: resonances ----
@@ -177,7 +193,7 @@ namespace detail {
 	// Bisection: a root of f in [a, b], given f(a) and f(b) have opposite signs (or one is zero)
 }
 
-// Resonance: tan kL = -(m / m_s) kL, m_s = rho_L L. No formula exists, so it is solved numerically,
+// Resonance: tan kL = -(m / m_s) kL, m_s = rho_L * L. No formula exists, so it is solved numerically,
 // written as sin(kL) + (m/m_s) kL cos(kL) = 0 to avoid tan's poles. The n-th root lies between
 // kL = (n - 1/2) pi (an infinitely heavy mass, a fixed end) and kL = n pi (no mass, a free end).
 
@@ -197,24 +213,35 @@ struct NormalModes {
 };
 
 // k_n = n pi / L  
-
+inline double mode_wave_number(const String& s,std::size_t k) {
+	return n * std::numbers::pi / s.length;
+}
 // w_n = n pi c / L 
+inline double mode_freq(const String& s, std::size_t k) {
+	return n * std::numbers::pi * wave_speed(s) / L;
+}
 
 // Build the modes from initial displacement y0(x) and initial velocity v0(x).
 // The integrals use the midpoint rule with n_points sub-intervals.
+template <class F, class G>
+NormalModes modes_from_initial(const String& s, F y0, G v0, int n_modes, int n_points = 4000){
+	
+}
+
 
 // Plucked: released at rest from y0
 
-// Struck: starts straight, with initial velocity v0
+template <class F>
+NormalModes pluck_modes(const String& s, F y0, int n_modes, int n_points = 4000)
 
-// y(x,t) 
+template <class G>
+NormalModes strike_modes(const String& s, G v0, int n_modes, int n_points = 4000)
 
-// u(x,t) = dy/dt 
+inline double position(const NormalModes& nm, double x, double t)
 
-// dy/dx (x,t): the string's slope. -T dy/dx is the transverse force the string exerts. 
+inline double velocity(const NormalModes& nm, double x, double t)
 
-
-
+inline double slope(const NormalModes& nm, double x, double t)
 
 // B.C Fixed: y(x,t) = y1(ct-x) - y1(ct+x)
 // B.C Free:  y(x,t) = y1(ct-x) + y1(ct+x)
