@@ -1,6 +1,7 @@
 #pragma once
 #include <numbers>
 #include <vector>
+#include <excpetion>
 #include "oscillators\forced_oscillators.hpp"
 namespace audphys{
 
