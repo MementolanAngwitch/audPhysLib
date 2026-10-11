@@ -1,4 +1,10 @@
 #pragma once 
+#include <numbers>
+#include <vector>
+#include <stdexcept>
+#include <complex>
+#include <cmath>
+#include "1d_wave.hpp"
 
 namespace audphys{
 	// Energy per unit length: 1/2 rho_L u^2 (kinetic) + 1/2 T (dy/dx)^2 (potential)
@@ -13,7 +19,7 @@ namespace audphys{
 
 	// E_n at time t  
 	inline double mode_energy(const String& s, const Mode& m, double t = 0.0) {
-		const double w = mode_angular_frequency(s, m.n);
+		const double w = mode_ang_freq(s, m.n);
 		return 0.25 * string_mass(s) * w * w * (m.A * m.A + m.B * m.B) * std::exp(-2 * m.beta * t);
 	}
 	// Total energy at time t

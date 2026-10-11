@@ -7,13 +7,13 @@ namespace audphyslib{
 
 struct Bar {
 	double length;
-	double width;
-	double ygMod;
+	double crossSectionArea;
+	double youngMod;
 	double density;
 
-	Bar(double l_,double w_,double y_,double d_) : length(l_), width(w_), ygMod(y_), density(d_){
+	Bar(double l_,double a_,double y_,double d_) : length(l_), crossSectionArea(w_), younggMod(y_), density(d_){
 		if (!(std::isfinite(l_) && l_ > 0)) throw std::invalid_argument("Invalid bar length");
-		if (!(std::isfinite(w_) && w_ > 0)) throw std::invalid_argument("Invalid bar width");
+		if (!(std::isfinite(w_) && w_ > 0)) throw std::invalid_argument("Invalid bar cross sectional area");
 		if (!(std::isfinite(w_) && y_ > 0)) throw std::invalid_argument("Invalid young's modulus");
 		if (!(std::isfinite(d_) && d_ > 0)) throw std::invalid_argument("Invalid density");
 	};
@@ -108,5 +108,17 @@ inline double total_free_real_displacement(const Bar& b, const WaveModeAmplitude
 	}
 	return std::real(out);
 }
-	
+// free-fixed bar used free-free displacment eqs.
+
+inline double free_fixed_mode_wave_number(const Bar& b, std::size_t n) {
+	return ((2*n-1) * std::numbers::pi)/(2 * b.length);
+}
+
+inline double free_fixed_mode_ang_freq(const Bar& b, std::size_t n) {
+	return ((2*n-1)/2) * phase_speed(b)/b.length * std::numbers::pi; 
+}
+
+//Mass loaded bar with mass at x=L and free at x=0
+
+inline double bar_mass 
 };

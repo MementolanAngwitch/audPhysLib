@@ -1,8 +1,10 @@
 #pragma once
 #include <numbers>
 #include <vector>
-#include <excpetion>
-#include "oscillators\forced_oscillators.hpp"
+#include <stdexcept>
+#include <complex>
+#include <cmath>
+#include "oscillators/forced_oscillators.hpp"
 namespace audphys{
 
 struct String {
@@ -46,7 +48,7 @@ inline double real_at(std::complex<double> p, double w, double t) {
 enum class End { Fixed, Free };
 
 inline double reflection_sign(End e) {
-	return e == End::fixed ? -1.0 : 1.0;
+	return e == End::Fixed ? -1.0 : 1.0;
 }
 
 // The shape y0 on [0, L], extended to the whole line by mirror images across each end.
@@ -58,33 +60,33 @@ inline double extended_shape(F y0, double L, End left, End right, double xi) {
 	const double flip_per_cycle = reflection_sign(left) * bc;
 
 	const double k = std::floor(xi / (2*L)); // which 2L cycle
-	const double v = xi -(k * 2 * L)         // position within the cycle 
+	const double v = xi -(k * 2 * L);         // position within the cycle 
 
 	const bool odd_cycle = std::fmod(std::abs(k), 2.0) == 1.0;
 	const double cycle_sign = (flip_per_cycle < 0 && odd_cycle) ? -1.0 : 1.0;
 
-	const double y = (v <= L) ? y0(v) | y0(2*L - v);
+	const double y = (v <= L) ? y0(v) : bc* y0(2*L - v);
 	return y * cycle_sign;
 }
 
 // String released AT REST from shape y0 (a pluck), ideal ends:
 // y(x,t) = 1/2 [ Y0(x - ct) + Y0(x + ct) ] 
 
-template<class F, class G>
-inline double position(F y0, F y1, const String& s, End left, End right, double x, double t) {
+template<class F>
+inline double position(F y0, const String& s, End left, End right, double x, double t) {
 	const double L = s.length; 
 	const double c = wave_speed(s);
-	return 1/2 * (extended_shape(y0, L, left, right, x - c*t) + extended_shape(y1,L,left,right,x+c*t));
+	return 0.5 * (extended_shape(y0, L, left, right, x - c*t) + extended_shape(y0,L,left,right,x+c*t));
 }
 
 // ==== Forced vibration of an infinite string ==================================
 // Only an outgoing wave: u(x) = (F / rho_L c) e^{-jkx},  input impedance Z_m0 = rho_L c
-inline double outgoing_wave(const String& s, double f, double w, double x) {
+inline std::complex<double> outgoing_wave(const String& s, double F, double w, double x) {
 	const double rho = s.lin_density;
 	const double c = wave_speed(s);
 	const double k = wave_number(s,w);
 
-	return (F / (rho * c)) * std::polar(1, -1.0 * k * x )
+	return (F / (rho * c)) * std::polar(1.0, -1.0 * k * x );
 }
 
 // Average power input F^2 / (2 rho_L c) 
@@ -98,8 +100,7 @@ inline double infinite_string_power(const String& s, double f) {
 //   at x = 0:  F = -T dy/dx                       (the driving force)
 //   at x = L:  -T dy/dx = Z_L u                   (the load, impedance Z_L)
 // Writing z = Z_L / (rho_L c) covers every termination in the chapter:
-//   free end z = 0, mass load z = j w m / rho_L c, resistance load z = R_m / rho_L c,
-//   fixed end z -> infinity (separate functions below, since z = infinity can't be computed).
+// Using reflection cofficient R = (Z0-ZL)/(Z0+ZL)
 
 struct WaveAmplitudes {
 	std::complex<double> A;		// wave travelling away from the driver   [m]
@@ -113,53 +114,86 @@ inline std::complex<double> mass_impedance(double w, double m) {
 }
 
 inline std::complex<double> resistance_impedance(double rm) {
-	return {0.0, rm}
+	return {rm, 0.0};
+}
+
+inline std::complex<double> reflection_coefficient(const String& s, std::complex<double> ZL) {
+	const double Z0 = characteristic_impedance(s);
+	return (Z0 - ZL) / (Z0 + ZL);
+} 
+
+inline std::complex<double> reflection_coefficient(End e) { return reflection_sign(e); }
+
+inline WaveAmplitudes forced_amplitudes(const String& s, double F, double w, std::complex<double> R) {
+	if (!(w > 0)) throw std::invalid_argument("forced_amplitudes: w must be positive");
+	const std::complex<double> j = {0.0,1.0};
+	const double k = wave_number(s,w);
+	const double L = s.length;
+	const double T = s.tension;
+	const std::complex<double> e = std::polar(1.0, -2.0 * k * L);
+	const std::complex<double> A = F / (j*k*T * (1.0 - R*e));
+	return {
+		A, R * e * A
+	};
+} 
+
+inline std::complex<double> input_impedance(const String& s, double w, std::complex<double> R) {
+	const double z0 = characteristic_impedance(s);
+	const double k = wave_number(s,w);
+	const std::complex<double> e = std::polar(1.0, -2.0 * k * s.length);
+	return z0 * ((1.0-R*e) / (1.0+R*e));
+}
+
+inline double input_power(const String& s, double F, double w, std::complex<double> R) {
+	const WaveAmplitudes amps = forced_amplitudes(s,F,w,R);
+	return 0.5 * characteristic_impedance(s) * w * w * std::norm(amps.A) * (1.0 - std::norm(R));
 }
 
 // Fixed forced finite string
 // A = (Fe^jkl) / (2jkTcoskL)
 // B = -(Fe^-jkl) / (2jkTcoskL)
 
-inline WaveAmplitudes loaded_amplitudes(const String& s, double F, double w) {
-	const double k = wave_number(s);
-	const double L = s.length;
-	const double T = s.tension;
-	const std::complex<double> num = F  * std::polar(1.0, k * L) 
-	const std::complex<double> num2 = F * std::polar(-1.0, k*L)
-	const std::complex<double> den = std::complex(0, 2.0 * k * T * cos(k*L));
+// inline WaveAmplitudes loaded_amplitudes(const String& s, double F, double w) {
+// 	const double k = wave_number(s,w);
+// 	const double L = s.length;
+// 	const double T = s.tension;
+// 	const std::complex<double> num = F  * std::polar(1.0, k * L);
+// 	const std::complex<double> num2 = -F * std::polar(1.0, -k*L);
+// 	const std::complex<double> den = std::complex(0.0, 2.0 * k * T * cos(k*L));
 
-	return {num / den , num2 / den};
-}
+// 	return {num / den , num2 / den};
+// }
 
-// Displacement phasor y(x) = A e^{-jkx} + B e^{jkx} 
+//Displacement phasor y(x) = A e^{-jkx} + B e^{jkx} 
 
-inline std::complex<double> displacement_phasor_forced_fixed_string(const String& s, const WaveAmplitudes& amps, const double x) {
-	const double k = wave_number(s);
+inline std::complex<double> displacement_phasor(const String& s, const WaveAmplitudes& amps, double w, double x) {
+	const double k = wave_number(s,w);
 	return amps.A * std::polar(1.0,-1.0 * k *x) + amps.B * std::polar(1.0,k * x);
 }
 
 // Velocity phasor u(x) = j w y(x) 
 
-inline std::complex<double> velo_phasor_forced_fixed_string(const String& s, double F, double w, double x) {
-	std::complex<double> amp = loaded_amplitudes(s, F, w);
-	return { 0.0, w * displacement_phasor_forced_fixed_string(s, amps, x) };
+inline std::complex<double> velocity_phasor(const String& s, const WaveAmplitudes& amps, double w, double x) {
+	return std::complex<double>(0.0, w) * displacement_phasor(s, amps, w, x);
 }
 
-// Fixed end: Z_m0 = -j rho_L c cot kL 
+// // Fixed end: Z_m0 = -j rho_L c cot kL 
 
-inline std::complex<double> input_impedance_forced_fixed_string(const String& s) {
-	const double rho = s.lin_density; 
-	const double c = wave_speed(s);
-	const double k = wave_number(k);
-	return { 0.0, rho * c * (std::cos(k*L) / std::sin(k*L)) };
-}
+// inline std::complex<double> input_impedance_forced_fixed_string(const String& s,double w) {
+// 	const double rho = s.lin_density; 
+// 	const double c = wave_speed(s);
+// 	const double k = wave_number(s,w);
+// 	const double L = s.length;
+// 	return { 0.0, -1.0 * rho * c * (std::cos(k*L) / std::sin(k*L)) };
+// }
 
 
-// Average power delivered by the driver: (F^2 / 2) Re{Z_m0} / |Z_m0|^2 
+// // Average power delivered by the driver: (F^2 / 2) Re{Z_m0} / |Z_m0|^2 
 
-inline double input_power_fixed_forced(const String& s, double F, double w) {
-	const std::complex<double> input_impedance_forced_fixed_string(s,w)
-}
+// inline double input_power_fixed_forced(const String& s, double F, double w) {
+// 	const std::complex<double> zm0 = input_impedance_forced_fixed_string(s,w);//Fix
+// 	return (F*F / 2) * std::real(zm0) / std::abs(zm0 * zm0)
+// }
 
 // ---- Forced, fixed string: resonances, nodes, antinodes ----
 
@@ -184,7 +218,7 @@ inline double forced_fixed_node_pos(const String& s, std::size_t q, double w) {
 // Antinodes: x_q = L - (2q - 1) lambda/4, q = 1, 2, ... while x_q >= 0 
 
 inline double forced_fixed_anti_node_pos(const String& s, std::size_t q, double w) {
-	return s.length - (2.0 * (q - 1) * wavelength(s,w)) / 4.0; 
+	return s.length - ((2.0 * q - 1) * wavelength(s,w)) / 4.0; 
 }
 
 
@@ -219,7 +253,7 @@ inline double mode_wave_number(const String& s,std::size_t n) {
 }
 // w_n = n pi c / L 
 inline double mode_ang_freq(const String& s, std::size_t n) {
-	return n * std::numbers::pi * wave_speed(s) / L;
+	return n * std::numbers::pi * wave_speed(s) / s.length;
 }
 
 // Build the modes from initial displacement y0(x) and initial velocity v0(x).
@@ -231,22 +265,19 @@ NormalModes modes_from_initial(const String& s, F y0, G v0, int n_modes, double 
 	const double L = s.length;
 	const double dx = L/n_points;
 	NormalModes nm{s,{}};
-	for (std::size_t n = 0; n < n_modes; ++n) {
-		const double k = mode_wave_number(s, k);
+	for (int n = 1; n <= n_modes; ++n) {
+		const double k = mode_wave_number(s, n);
 		double sy = 0.0;
 		double sv = 0.0;
-		for (std::size_t i = 0; i < n_points; ++i) {
+		for (int i = 0; i < n_points; ++i) {
 			const double x = (i + 0.5) * dx;
 			const double sn = std::sin(k*x);
 			sy += y0(x) * sn;
 			sv += v0(x) * sn;
 		}
-		nm.modes.push_back({
-			n,
-			2.0 / L * sy * dx,
-			2.0 / (mode_ang_freq(s,n) * L) * sv * dx,
-			beta
-		});
+		const double An = 2.0 / L * sy * dx;
+		const double Vn = 2.0 / L * sv * dx;
+		nm.modes.push_back({ n, An, (Vn + beta * An) / mode_ang_freq(s, n), beta });
 	}
 	return nm;
 }
@@ -256,22 +287,23 @@ NormalModes modes_from_initial(const String& s, F y0, G v0, int n_modes, double 
 // u(x,0) is zero, check that all Bn banish and An = [8h/*npi^2] sin(npi/2) where h is the initial displacement at center
 template <class F>
 NormalModes pluck_modes(const String& s, F y0, int n_modes, double beta, int n_points = 4000) {
-	return modes_from_initial(s, y0, [](double) {return 0.0}, n_modes, beta, n_points );
+	return modes_from_initial(s, y0, [](double) {return 0.0;}, n_modes, beta, n_points );
 }
 
 template <class G>
 NormalModes strike_modes(const String& s, G v0, int n_modes, int n_points = 4000) {
-	return modes_from_inital(s,[](double){return 0.0}, v0, n_modes, beta, n_points);
+	return modes_from_initial(s,[](double){return 0.0;}, v0, n_modes, 0.0, n_points);
 }
 
 // y(x,t) = sum_{n=1, ...} (An cos(wnt) + Bn sin(wnt)) * sin(knx)
 inline double position(const NormalModes& nm, double x, double t) {
 	double y = 0.0;
-	for (const Mode& mode : nm.modes) {
+	for (const Mode& m : nm.modes) {
 		const double w = mode_ang_freq(nm.s,m.n);
-		const double k = wave_number(nm.s, m.n)
-		y += ( mode.A * std::cos(w*t) +
-			   mode.B * std::sin(w*t) ) 
+		const double k = mode_wave_number(nm.s, m.n);
+		y += std::exp(-m.beta * t) *
+			 (m.A * std::cos(w*t) +
+			   m.B * std::sin(w*t) ) 
 			 * std::sin(k * x);
 	}
 	return y; 
@@ -281,8 +313,8 @@ inline double position(const NormalModes& nm, double x, double t) {
 inline double velocity(const NormalModes& nm, double x, double t) {
 	double u = 0.0;
 	for (const Mode& m : nm.modes) {
-		const double w = mode_angular_frequency(nm.s, m.n);
-		const double c = std::cos(w * t)
+		const double w = mode_ang_freq(nm.s, m.n);
+		const double c = std::cos(w * t);
 		const double sn = std::sin(w * t);
 		u += std::exp(-m.beta * t) * ((-m.beta * m.A + w * m.B) * c + (-m.beta * m.B - w * m.A) * sn)
 		   * std::sin(mode_wave_number(nm.s, m.n) * x);
@@ -294,7 +326,7 @@ inline double velocity(const NormalModes& nm, double x, double t) {
 inline double slope(const NormalModes& nm, double x, double t) {
 	double d = 0.0;
 	for (const Mode& m : nm.modes) {
-		const double w = mode_angular_frequency(nm.s, m.n);
+		const double w = mode_ang_freq(nm.s, m.n);
 		const double k = mode_wave_number(nm.s, m.n);
 		d += std::exp(-m.beta * t) * (m.A * std::cos(w * t) + m.B * std::sin(w * t)) * k * std::cos(k * x);
 	}
