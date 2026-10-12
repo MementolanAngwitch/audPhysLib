@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <complex>
 #include <cmath>
-
+#include "tools\brent_method.hpp"
 namespace audphys{
 
 struct String {
@@ -224,15 +224,17 @@ inline double forced_fixed_anti_node_pos(const String& s, std::size_t q, double 
 
 // ---- Forced, mass-loaded string: resonances ----
 
-namespace detail {
-// Bisection: a root of f in [a, b], given f(a) and f(b) have opposite signs (or one is zero)
-
-
-}
-
 // Resonance: tan kL = -(m / m_s) kL, m_s = rho_L * L. No formula exists, so it is solved numerically,
 // written as sin(kL) + (m/m_s) kL cos(kL) = 0 to avoid tan's poles. The n-th root lies between
 // kL = (n - 1/2) pi (an infinitely heavy mass, a fixed end) and kL = n pi (no mass, a free end).
+// f_res = kL * c / (2pi L)
+
+inline double mass_loaded_resonance_freq(const String& s, double m, double n) {
+	const double pi = std::numbers::pi, mu = m / string_mass(s);
+	auto g = [mu](double x) { return std::sin(x) + mu * x * std::cos(x); };
+	const double kL = Brent(g, (n-0.5) * pi, n * pi);
+	return kL * wave_speed(s) / (2*pi*s.length);
+} 
 
 
 // ==== Normal modes of the fixed, fixed string ==================================
