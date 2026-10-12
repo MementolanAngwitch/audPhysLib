@@ -1,9 +1,9 @@
+#pragma once
+
 #include <cmath>
 #include <cstdio>
 #include <limits>
-#include <numbers>
 #include <stdexcept>
-#include <iostream>
 
 namespace audphys{
 	/*
@@ -30,7 +30,7 @@ namespace audphys{
 	1. Only interpolate if the last step helped. Interpolation is attempted only if |f(a)| > |f(b)| meaning the previous step
 	   actually reduced |f|, and the step taken two iterations ago was at least delta. Otherwise b* = b + m, a bisection step
 	2. The trial point must stay in the near part of the bracket. b* is accepted only if it lies between b and the point three 
-	   quarters of the way from b to c:
+	   quarters of the way from b to c also b* - b has same sign as c-b,
 	   									|b* - b| < 3/4 |c-b|
 	   Interpolation can throw a point outside the bracket, or almost onto its fare end, which wastes the step
 	3. The steps must keep shrinking. b* is also accepted only if 
@@ -51,42 +51,77 @@ namespace audphys{
 	*/
 
 template<class F>
-double Brent(F f, double x0, double x1, double TOL = 1e-15, bool log = false) {
+double Brent(F f, double x0, double x1, double TOL = 1e-15) {
 	const double eps = std::numeric_limits<double>::epsilon();
-	double prev = x0, best = x1, other = 0.0;
+	
+	double fx0 = f(x0), fx1 = f(x1);
+	if (fx0 == 0.0) return x0;
+	if (fx1 == 0.0) return x1;
+	if (fx0*fx1 > 0) throw std::invalid_argument("Brent Method: fx0 and fx1 must have opposite signs");
+	double best = x1, fbest = fx1, other = x0, fother = fx0;
+	if (std::abs(fx0) < std::abs(fx1)) { best = x0, fbest = fx0, other = x1, fother = fx1;}
+	
+	double prev = other, fprev = fother;
 
-	double fprev = f(x0), fbest = f(x1), fother = 0.0;
-	if (fprev*fbest > 0) throw std::invalid_argument("f(x0)f(x1) exceeds 0");
 
-	if (std::abs(fprev) < std::abs(fbest)) {
-		other = best;
-		fother = fbest;
-		best = prev;
-		fbest = fprev;
-	} 
-	else{
-		other = prev; fother = fprev;
-	}
-	while (true) {
-		if (std::abs(best - other) < TOL) return best;
-		if (other == prev) { //b* = (af(b)-bf(a))/(f(b)-f(a))
-			double canidate = (prev * fbest - best * fprev) / (fbest - fprev);
-		}
-		else {
+	//Iteration checking
+	double d = other -best; //last step
+	double e = d; //step before last
+	for (int iter = 0; iter < 200; ++iter) {
+		const double step = 0.5 * (other - best);
+		const double delta = 2.0 * eps * std::abs(best) + 0.5 * TOL;
+		//step 1
+		if (fbest == 0.0 || std::abs(best - other) <= TOL + 4.0 * eps * std::abs(best)) return best;
+		double candidate;
+		if (std::abs(e) >= delta && std::abs(fprev) > std::abs(fbest)) {	// rule 1: interpolate only if the last step helped
+			if (other == prev) {		// secant: b* = (af(b)-bf(a))/(f(b)-f(a))
+				candidate = (prev * fbest - best * fprev) / (fbest - fprev);
+			} else {					// inverse quadratic: b* = gamma
 			// Determine alpha, beta, gamma such that p(y) = alpha y^2 + beta y + gamma 
 			// satisfies p(f(a)) = a, p(f(b)) = b, p(f(c)) = c
 			// Set b* = gamma
 			// p(y) = a (y-fb)(y-fc)/(fa-fb)(fa-fc) + b (y-fa)(y-fc)/(fb-fa)(fb-fc) + c (y-fa)(y-fb)/(fc-fa)(fc-fb)
 			// set y = 0 and solve for b
 			// b* = a fbfc/(fa-fb)(fa-fc) + b fafc/(fb-fa)(fb-fc) + c fafb/(fc-fa)(fc-fb) 
-
-			double candiate = prev * (fbest * fother) / ((fprev - fbest)*(fprev - fother))
-							  + best * (fprev * fother) / ((fbest - fprev)*(fbest - fother)) 
-							  + other * (fprev * fbest) / ((fother - fprev)*(fother - fbest));
-
+				candidate = prev  * (fbest * fother) / ((fprev  - fbest) * (fprev  - fother))
+				          + best  * (fprev * fother) / ((fbest  - fprev) * (fbest  - fother))
+				          + other * (fprev * fbest)  / ((fother - fprev) * (fother - fbest));
+			}
+			const double trial = candidate - best;
+			const bool toward_other = (trial > 0) == (step > 0);						// rule 2: direction
+			if (toward_other && std::abs(trial) < 0.75 * std::abs(other - best)		// rule 2: near part
+			                 && std::abs(trial) < 0.5 * std::abs(e)) {					// rule 3: shrinking
+				e = d;  d = trial;			// accepted: shift the history
+			} else {
+				candidate = best + step;	// rejected: bisect
+				d = e = step;
+			}
+		} else {
+			candidate = best + step;		// rule 1 failed: bisect
+			d = e = step;
 		}
-		
+		if (std::abs(candidate - best) < delta) {			// rule 4: at least delta, toward c
+			candidate = best + std::copysign(delta, step);
+		}
+
+		//step 4
+		prev = best; fprev = fbest;
+		best = candidate; fbest = f(candidate);
+
+		if (fbest * fother > 0) {
+			other = prev;  fother = fprev;
+			d = e = best-prev;
+			//IMPLEMENT: step history is also reset here, e <- b-a 
+		}
+
+		if (std::abs(fother) < std::abs(fbest)) {
+			double temp = best, ftemp = fbest;
+			best = other; fbest = fother;
+			other = temp; fother = ftemp;
+			prev = temp; fprev = ftemp;
+		}
 	}
+	return best;
 }
 
-}; //namespace audphyslib
+} //namespace audphys

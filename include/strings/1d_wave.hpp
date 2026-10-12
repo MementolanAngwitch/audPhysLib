@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <complex>
 #include <cmath>
-#include "oscillators/forced_oscillators.hpp"
+
 namespace audphys{
 
 struct String {
@@ -225,7 +225,9 @@ inline double forced_fixed_anti_node_pos(const String& s, std::size_t q, double 
 // ---- Forced, mass-loaded string: resonances ----
 
 namespace detail {
-	// Bisection: a root of f in [a, b], given f(a) and f(b) have opposite signs (or one is zero)
+// Bisection: a root of f in [a, b], given f(a) and f(b) have opposite signs (or one is zero)
+
+
 }
 
 // Resonance: tan kL = -(m / m_s) kL, m_s = rho_L * L. No formula exists, so it is solved numerically,

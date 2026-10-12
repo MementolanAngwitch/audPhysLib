@@ -11,7 +11,7 @@ struct Bar {
 	double youngMod;
 	double density;
 
-	Bar(double l_,double a_,double y_,double d_) : length(l_), crossSectionArea(w_), younggMod(y_), density(d_){
+	Bar(double l_,double a_,double y_,double d_) : length(l_), crossSectionArea(w_), youngMod(y_), density(d_){
 		if (!(std::isfinite(l_) && l_ > 0)) throw std::invalid_argument("Invalid bar length");
 		if (!(std::isfinite(w_) && w_ > 0)) throw std::invalid_argument("Invalid bar cross sectional area");
 		if (!(std::isfinite(w_) && y_ > 0)) throw std::invalid_argument("Invalid young's modulus");
@@ -24,14 +24,14 @@ inline double strain(const Bar& b,double change) {
 }
 // hooke's law
 inline double stress(const Bar& b, double strain) {
-	return -1.0 * b.ygMod * strain;
+	return -1.0 * b.youngMod * strain;
 }
 
 
 // eq of mtion d^2 y/ d^2 x = 1/c^2 d^2 y/dt^2
 
 inline double phase_speed(const Bar& b) {
-	return std::sqrt(b.ygMod / b.density);
+	return std::sqrt(b.youngMod / b.density);
 }
 
 inline double wave_number(const Bar& b, double w) {
@@ -120,5 +120,20 @@ inline double free_fixed_mode_ang_freq(const Bar& b, std::size_t n) {
 
 //Mass loaded bar with mass at x=L and free at x=0
 
-inline double bar_mass 
+struct MassLoadedBar {
+	Bar bar;
+	double mass;
+}
+
+inline double bar_mass(const Bar& b) {
+	return b.length * b.crossSectionArea * b.density; 
+}
+
+//solve tan kL = -(m/mb) kL
+//then kL x / L = pi/2 where kL solves tank kL = -(m/mb) kL
+
+inline double node_position(const Bar& b) {
+	
+}
+	
 };
