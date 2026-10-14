@@ -182,4 +182,25 @@ inline std::complex<double> forceRight(const WaveAmplitude& amps, const GeneralB
 	return b.impRight * velocity(amps,b.bar,w,b.bar.length,t);
 }
 
+// B = (1+(zm0/plc))/(1-(zm0/plc)) A
+// tankL = j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))
+
+inline std::complex<double> mode_shape(const GeneralBar& b, double A) {
+	std::complex<double> zm0 = b.impLeft;
+	std::complex<double> plc = b.bar.density * phase_speed(b.bar);
+
+	return (1.0+zm0/plc) / (1.0-zm0/plc) * A;
+}
+
+//kL = arctan(j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))) * npi
+inline std::complex<double> general_freely_vibrating_kl(const GeneralBar& b, std::size_t n) {
+	const std::complex<double> j = {0.0,1.0};
+	const std::complex<double> zm0 = b.impLeft;
+	const std::complex<double> zm = b.impRight;
+	const std::complex<double> plc = b.bar.density * phase_speed(b.bar);
+
+	const std::complex<double> w = j * ((zm0 / plc) + (zm / plc)) / (1.0+(zm0/plc)*(zm/plc));
+	return std::atan(w) + n * std::numbers::pi;
+}
+
 };
