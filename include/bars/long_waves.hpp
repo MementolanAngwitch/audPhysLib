@@ -6,7 +6,7 @@
 #include <vector>
 #include <cmath>
 
-#include "tools\brent_method.hpp"
+#include "tools/brent_method.hpp"
 
 namespace audphys{
 
@@ -158,45 +158,57 @@ inline std::vector<double> mass_loaded_nodes(const Bar& b, double m, int n) {
 	const double k = mass_loaded_kL(b,m,n)/b.length;
 	std::vector<double> nodes;
 	for (int i = 0; i < n; ++i) {
-		nodes.push_back((i - 0.5) * pi/k); 
+		nodes.push_back((i + 0.5) * pi/k); 
 	}
 	return nodes;
-}	
+}
 
+struct Load {
+	double R = 0.0; // Resistance
+	double m = 0.0; // Mass
+	double s = 0.0; // Stiffness
+};
+
+struct LoadedBar{
+	Bar bar;
+	Load left;
+	Load right;
+}
+
+inline std::complex<double> impedance(const Load& L, std::complex<double> w) {
+	const std::complex<double> j{ 0.0,1.0 };
+	std::complex<double> Z = L.R + j * w * L.m;
+	if (L.s >0) Z += L.s / (j*w);
+	return Z;
+}
 //Freely vibrating bar with general B.C
 
 //mech imp  of support at x=0 is zm0 the force acting on this support due to the bar is 
 // f0 = -Zm0 u(0,t) using convention of ending at the right, starting at the left
 
-struct FreeBar {
-	std::complex<double> impLeft;
-	std::complex<double> impRight;
-	Bar bar;  
-};
-
-inline std::complex<double> forceLeft(const WaveAmplitude& amps, const FreeBar& b, double w, double t) {
-	return -1.0 * b.impLeft * velocity(amps,b.bar,w,0,t);
+inline std::complex<double> forceLeft(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
+	return -1.0 * impedance(b.left,w) * velocity(amps,b,w,0.0,t);
 }
 
-inline std::complex<double> forceRight(const WaveAmplitude& amps, const FreeBar& b, double w, double t) {
-	return b.impRight * velocity(amps,b.bar,w,b.bar.length,t);
+inline std::complex<double> forceRight(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
+	return impedance(r.right,w) * velocity(amps,b.bar,w,b.bar.length,t);
 }
 
 // B = (1+(zm0/plc))/(1-(zm0/plc)) A
 // tankL = j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))
 
-inline std::complex<double> mode_shape(const FreeBar& b, double A) {
-	std::complex<double> zm0 = b.impLeft;
+inline std::complex<double> reflection_ratio(const LoadedBar& b, double w) {
+	std::complex<double> zm0 = impedance(b.left,w);
 	std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
 
-	return (1.0+zm0/plc) / (1.0-zm0/plc) * A;
+	return (1.0+zm0/plc) / (1.0-zm0/plc);
 }
 
-//kL = arctan(j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))) * npi
+//kL = arctan(j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))) + npi
 inline std::complex<double> general_freely_vibrating_kl(const FreeBar& b, std::size_t n) {
-	const std::complex<double> j = {0.0,1.0};
-	const std::complex<double> zm0 = b.impLeft;
-	const std::complex<double> zm = b.impRight;
+	const std::complex<double> j{0.0,1.0};
+	const std::complex<double> zm0 = impedance(b.left,w);
+	const std::complex<double> zm = impedance(b.right,w);
 	const std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
 
 	const std::complex<double> w = j * ((zm0 / plc) + (zm / plc)) / (1.0+(zm0/plc)*(zm/plc));
@@ -208,10 +220,26 @@ inline std::complex<double> general_freely_vibrating_kl(const FreeBar& b, std::s
 struct ForcedBar{
 	Bar bar;
 	double force;
-	const std::complex<double> impRight;
+	Load left;
+	Load right;
 };
 
 inline std::complex<double> complex_force(const ForcedBar& b, double w, double t) {
 	return std::polar(b.force, w* t);
 }
-};
+
+inline std::complex<double> forced_input_imp(const ForcedBar& b,double w) {
+	double plc = b.bar.crossSectionArea * b.bar.density * phase_speed(b.bar);
+	double kl = wave_number(b.bar,w) * b.bar.length;
+	std::complex<double> zm = impedance(b.right, w);
+	std::complex<double> j = { 0.0,1.0 };
+
+	return plc * ((zm / plc) + j * std::tan(kl)) / (1 + (zm/plc)*j*std::tan(kl));
+}
+// Using scaled mech imp Zm/plc = R/plc + jX/plc = r+jx
+// xtan^2 (kL) + (r^2 + x^2 -1) tan(kL) - x = 0
+
+// inline std::complex<double> resonance_kL(const ForcedBar& b, double w) {
+	
+// }
+}
