@@ -166,41 +166,52 @@ inline std::vector<double> mass_loaded_nodes(const Bar& b, double m, int n) {
 //Freely vibrating bar with general B.C
 
 //mech imp  of support at x=0 is zm0 the force acting on this support due to the bar is 
-// f0 = -Zm0 u(0,t)
+// f0 = -Zm0 u(0,t) using convention of ending at the right, starting at the left
 
-struct GeneralBar {
+struct FreeBar {
 	std::complex<double> impLeft;
 	std::complex<double> impRight;
 	Bar bar;  
 };
 
-inline std::complex<double> forceLeft(const WaveAmplitude& amps, const GeneralBar& b, double w, double t) {
+inline std::complex<double> forceLeft(const WaveAmplitude& amps, const FreeBar& b, double w, double t) {
 	return -1.0 * b.impLeft * velocity(amps,b.bar,w,0,t);
 }
 
-inline std::complex<double> forceRight(const WaveAmplitude& amps, const GeneralBar& b, double w, double t) {
+inline std::complex<double> forceRight(const WaveAmplitude& amps, const FreeBar& b, double w, double t) {
 	return b.impRight * velocity(amps,b.bar,w,b.bar.length,t);
 }
 
 // B = (1+(zm0/plc))/(1-(zm0/plc)) A
 // tankL = j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))
 
-inline std::complex<double> mode_shape(const GeneralBar& b, double A) {
+inline std::complex<double> mode_shape(const FreeBar& b, double A) {
 	std::complex<double> zm0 = b.impLeft;
-	std::complex<double> plc = b.bar.density * phase_speed(b.bar);
+	std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
 
 	return (1.0+zm0/plc) / (1.0-zm0/plc) * A;
 }
 
 //kL = arctan(j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))) * npi
-inline std::complex<double> general_freely_vibrating_kl(const GeneralBar& b, std::size_t n) {
+inline std::complex<double> general_freely_vibrating_kl(const FreeBar& b, std::size_t n) {
 	const std::complex<double> j = {0.0,1.0};
 	const std::complex<double> zm0 = b.impLeft;
 	const std::complex<double> zm = b.impRight;
-	const std::complex<double> plc = b.bar.density * phase_speed(b.bar);
+	const std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
 
 	const std::complex<double> w = j * ((zm0 / plc) + (zm / plc)) / (1.0+(zm0/plc)*(zm/plc));
 	return std::atan(w) + n * std::numbers::pi;
 }
 
+// Forced bar, 
+
+struct ForcedBar{
+	Bar bar;
+	double force;
+	const std::complex<double> impRight;
+};
+
+inline std::complex<double> complex_force(const ForcedBar& b, double w, double t) {
+	return std::polar(b.force, w* t);
+}
 };
