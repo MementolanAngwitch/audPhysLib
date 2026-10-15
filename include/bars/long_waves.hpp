@@ -5,6 +5,7 @@
 #include <complex>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 #include "tools/brent_method.hpp"
 
@@ -173,7 +174,7 @@ struct LoadedBar{
 	Bar bar;
 	Load left;
 	Load right;
-}
+};
 
 inline std::complex<double> impedance(const Load& L, std::complex<double> w) {
 	const std::complex<double> j{ 0.0,1.0 };
@@ -187,32 +188,97 @@ inline std::complex<double> impedance(const Load& L, std::complex<double> w) {
 // f0 = -Zm0 u(0,t) using convention of ending at the right, starting at the left
 
 inline std::complex<double> forceLeft(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
-	return -1.0 * impedance(b.left,w) * velocity(amps,b,w,0.0,t);
+	return -1.0 * impedance(b.left,w) * velocity(amps,b.bar,w,0.0,t);
 }
 
 inline std::complex<double> forceRight(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
-	return impedance(r.right,w) * velocity(amps,b.bar,w,b.bar.length,t);
+	return impedance(b.right,w) * velocity(amps,b.bar,w,b.bar.length,t);
 }
 
 // B = (1+(zm0/plc))/(1-(zm0/plc)) A
 // tankL = j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))
 
-inline std::complex<double> reflection_ratio(const LoadedBar& b, double w) {
+inline std::complex<double> reflection_ratio(const LoadedBar& b, std::complex<double> w) {
 	std::complex<double> zm0 = impedance(b.left,w);
 	std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
 
 	return (1.0+zm0/plc) / (1.0-zm0/plc);
 }
 
-//kL = arctan(j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))) + npi
-inline std::complex<double> general_freely_vibrating_kl(const FreeBar& b, std::size_t n) {
-	const std::complex<double> j{0.0,1.0};
-	const std::complex<double> zm0 = impedance(b.left,w);
-	const std::complex<double> zm = impedance(b.right,w);
-	const std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
+struct Termination {
+	bool fixed = false;
+	Load load{};
+};
 
-	const std::complex<double> w = j * ((zm0 / plc) + (zm / plc)) / (1.0+(zm0/plc)*(zm/plc));
-	return std::atan(w) + n * std::numbers::pi;
+inline Termination fixed_end() {return {true, Load{}}; }
+inline Termination free_end() {return {false, Load{}}; }
+inline Termination loaded_end(const Load& L) {return {false, L};}
+
+struct TerminatedBar {
+	Bar bar;
+	Termination left;
+	Termination right;
+};
+
+// Reflection coefficient of an end: R = (1 - z) / (1 + z),  z = Z / (rho c S).
+// Finite for every end: free R = +1, fixed R = -1, matched resistance (z = 1) R = 0.
+inline std::complex<double> reflection(const Termination& e, double z0, std::complex<double> w) {
+	if (e.fixed) return -1.0;
+	const std::complex<double> z= impedance(e.load,w) / z0;
+	return (1.0-z) / (1.0+z);
+}
+
+// tan kL = j (z0 + zL) / (1 + z0 zL),  z = Z / (rho c S), both impedances evaluated at w = c kL / L.
+// kL is complex when a load has resistance: Re = frequency, Im = decay. Because the impedances depend
+// on kL itself, solve by fixed-point iteration: kL <- arctan(rhs(kL)) + n pi, until it stops changing.
+// Mode n (n >= 1) has Re(kL) between (n - 1/2) pi and (n + 1/2) pi.
+inline std::complex<double> mode_kl(const TerminatedBar& b, std::size_t n) {
+	const std::complex<double> j{ 0.0,1.0 };
+	const double pi = std::numbers::pi;
+	const double c = phase_speed(b.bar);
+	const double L = b.bar.length;
+	const double plc = b.bar.density * b.bar.crossSectionArea * c;
+
+	auto step = [&](std::complex<double> kl) {
+		const std::complex<double> w = c * kl / L;
+		const std::complex<double> RR = reflection(b.left, plc, w) * reflection(b.right, plc, w);
+		if (std::abs(RR) == 0.0) throw std::domain_error("mode_kl an end absorbs every wave, no modes exist");
+		return -0.5 * j * std::log(RR) + n * pi;
+	};
+	std::complex<double> kl = std::max(n*pi, 0.25*pi);
+	for (int it = 0; it < 500; ++it) {
+		const std::complex<double> next = step(kl);
+		if (std::abs(next - kl) <= 1e-14 * std::abs(next)) return next;
+		kl = next;
+	} 
+	throw std::runtime_error("general_freely_vibrating_kl: iteration did not converge");
+}
+
+// The lowest N modes with postive frequency, sorted. Avoids depending on how n labels each mode.
+inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, int N) {
+	std::vector<std::complex<double>> out;
+	for (int n = 0; static_cast<int>(out.size()) < N; ++n) {
+		std::complex<double> kl;
+		try { kl = mode_kl(tb,N); }
+		catch (const std::runtime_error&) {
+			if (n ==0) continue;
+			throw;
+		}
+		if (kl.real() > 1e-9) out.push_back(kl); // skip kl = 0
+	}
+	std::sort(out.begin(), out.end(), [](auto a, auto b) {return a.real() < b.real(); });
+	out.resize(std::min<std::size_t>(out.size(),N));
+	return out;
+}
+
+
+// Frequency and decay rate of a mode, from its complex kL:  w = c kL / L
+inline double mode_frequency(const Bar& b, std::complex<double> kL) {
+	return phase_speed(b) * kL.real() / (2.0 * std::numbers::pi * b.length);
+}
+
+inline double mode_decay_rate(const Bar& b, std::complex<double> kL) {
+	return phase_speed(b) * kL.imag() / b.length;
 }
 
 // Forced bar, 
@@ -234,12 +300,12 @@ inline std::complex<double> forced_input_imp(const ForcedBar& b,double w) {
 	std::complex<double> zm = impedance(b.right, w);
 	std::complex<double> j = { 0.0,1.0 };
 
-	return plc * ((zm / plc) + j * std::tan(kl)) / (1 + (zm/plc)*j*std::tan(kl));
+	return plc * ((zm / plc) + j * std::tan(kl)) / (1.0 + (zm/plc)*j*std::tan(kl));
 }
 // Using scaled mech imp Zm/plc = R/plc + jX/plc = r+jx
 // xtan^2 (kL) + (r^2 + x^2 -1) tan(kL) - x = 0
 
-// inline std::complex<double> resonance_kL(const ForcedBar& b, double w) {
-	
-// }
+
+
+
 }
