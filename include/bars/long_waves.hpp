@@ -6,25 +6,27 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-
+#include <array>
 #include "tools/brent_method.hpp"
 
 namespace audphys{
-struct crossSection {
+struct CrossSection {
 	double area; 
 	double kappa; //radius of gyration
 };
 
 struct Bar {
 	double length;
-	crossSection crossSection;
+	CrossSection crossSection;
 	double youngMod;
 	double density;
 
-	Bar(double l_,double a_,double y_,double d_) : length(l_), youngMod(y_), density(d_){
+	Bar(double l_, CrossSection cs_,double y_,double d_) : length(l_), crossSection(cs_),youngMod(y_), density(d_){
 		if (!(std::isfinite(l_) && l_ > 0)) throw std::invalid_argument("Invalid bar length");
 		if (!(std::isfinite(y_) && y_ > 0)) throw std::invalid_argument("Invalid young's modulus");
 		if (!(std::isfinite(d_) && d_ > 0)) throw std::invalid_argument("Invalid density");
+		if (!(std::isfinite(cs_.area) && cs_.area > 0))   throw std::invalid_argument("Invalid cross-sectional area");
+		if (!(std::isfinite(cs_.kappa) && cs_.kappa > 0)) throw std::invalid_argument("Invalid radius of gyration");
 	};
 };
 // using y to represent longitudinal displacement
@@ -153,7 +155,7 @@ inline double bar_mass(const Bar& b) {
 inline double mass_loaded_kL(const Bar& b, double m, int n) {
 	const double pi = std::numbers::pi, mu = m/bar_mass(b);
 	auto g = [mu](double x) {return std::sin(x) + mu * x * std::cos(x);};
-	return Brent(g, (n-0.5) * pi, n *pi);
+	return brent(g, (n-0.5) * pi, n *pi);
 }
 
 // Nodes of mode n: cos kx = 0 -> x_q = (q-1/2) pi/k q= 1,...,n
@@ -262,7 +264,7 @@ inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, i
 	std::vector<std::complex<double>> out;
 	for (int n = 0; static_cast<int>(out.size()) < N; ++n) {
 		std::complex<double> kl;
-		try { kl = mode_kl(tb,N); }
+		try { kl = mode_kl(tb,n); }
 		catch (const std::runtime_error&) {
 			if (n ==0) continue;
 			throw;

@@ -51,7 +51,7 @@ namespace audphys{
 	*/
 
 template<class F>
-double Brent(F f, double x0, double x1, double TOL = 1e-15) {
+double brent(F f, double x0, double x1, double TOL = 1e-15) {
 	const double eps = std::numeric_limits<double>::epsilon();
 	
 	double fx0 = f(x0), fx1 = f(x1);

@@ -232,7 +232,7 @@ inline double forced_fixed_anti_node_pos(const String& s, std::size_t q, double 
 inline double mass_loaded_resonance_freq(const String& s, double m, double n) {
 	const double pi = std::numbers::pi, mu = m / string_mass(s);
 	auto g = [mu](double x) { return std::sin(x) + mu * x * std::cos(x); };
-	const double kL = Brent(g, (n-0.5) * pi, n * pi);
+	const double kL = brent(g, (n-0.5) * pi, n * pi);
 	return kL * wave_speed(s) / (2*pi*s.length);
 } 
 
