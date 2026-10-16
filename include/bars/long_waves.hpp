@@ -10,16 +10,19 @@
 #include "tools/brent_method.hpp"
 
 namespace audphys{
+struct crossSection {
+	double area; 
+	double kappa; //radius of gyration
+};
 
 struct Bar {
 	double length;
-	double crossSectionArea;
+	crossSection crossSection;
 	double youngMod;
 	double density;
 
-	Bar(double l_,double a_,double y_,double d_) : length(l_), crossSectionArea(a_), youngMod(y_), density(d_){
+	Bar(double l_,double a_,double y_,double d_) : length(l_), youngMod(y_), density(d_){
 		if (!(std::isfinite(l_) && l_ > 0)) throw std::invalid_argument("Invalid bar length");
-		if (!(std::isfinite(a_) && a_ > 0)) throw std::invalid_argument("Invalid bar cross sectional area");
 		if (!(std::isfinite(y_) && y_ > 0)) throw std::invalid_argument("Invalid young's modulus");
 		if (!(std::isfinite(d_) && d_ > 0)) throw std::invalid_argument("Invalid density");
 	};
@@ -36,12 +39,12 @@ inline double stress(const Bar& b, double strain) {
 
 // eq of mtion d^2 y/ d^2 x = 1/c^2 d^2 y/dt^2
 
-inline double phase_speed(const Bar& b) {
+inline double longitudinal_phase_speed(const Bar& b) {
 	return std::sqrt(b.youngMod / b.density);
 }
 
 inline double wave_number(const Bar& b, double w) {
-	return w / phase_speed(b);
+	return w / longitudinal_phase_speed(b);
 }
 
 
@@ -74,7 +77,7 @@ inline double mode_wave_number(const Bar& b, std::size_t n) {
 }
 
 inline double mode_ang_freq(const Bar& b, std::size_t n) {
-	return (n * std::numbers::pi * phase_speed(b)) / b.length;
+	return (n * std::numbers::pi * longitudinal_phase_speed(b)) / b.length;
 }
 
 inline std::complex<double> fixed_complex_displacement(const Bar& b, const WaveModeAmplitudes& AmpList, std::size_t n, double x, double t) {
@@ -128,7 +131,7 @@ inline double free_fixed_mode_wave_number(const Bar& b, std::size_t n) {
 }
 
 inline double free_fixed_mode_ang_freq(const Bar& b, std::size_t n) {
-	return ((2.0*n-1.0)/2.0) * phase_speed(b)/b.length * std::numbers::pi; 
+	return ((2.0*n-1.0)/2.0) * longitudinal_phase_speed(b)/b.length * std::numbers::pi; 
 }
 
 //Mass loaded bar with mass at x=L and free at x=0
@@ -139,7 +142,7 @@ struct MassLoadedBar {
 };
 
 inline double bar_mass(const Bar& b) {
-	return b.length * b.crossSectionArea * b.density; 
+	return b.length * b.crossSection.area * b.density; 
 }
 
 // Resonance: tan kL = -(m / m_b) kL, m_b = rho_b * L. No formula exists, so it is solved numerically,
@@ -200,7 +203,7 @@ inline std::complex<double> forceRight(const WaveAmplitude& amps, const LoadedBa
 
 inline std::complex<double> reflection_ratio(const LoadedBar& b, std::complex<double> w) {
 	std::complex<double> zm0 = impedance(b.left,w);
-	std::complex<double> plc = b.bar.density * b.bar.crossSectionArea * phase_speed(b.bar);
+	std::complex<double> plc = b.bar.density * b.bar.crossSection.area * longitudinal_phase_speed(b.bar);
 
 	return (1.0+zm0/plc) / (1.0-zm0/plc);
 }
@@ -235,9 +238,9 @@ inline std::complex<double> reflection(const Termination& e, double z0, std::com
 inline std::complex<double> mode_kl(const TerminatedBar& b, std::size_t n) {
 	const std::complex<double> j{ 0.0,1.0 };
 	const double pi = std::numbers::pi;
-	const double c = phase_speed(b.bar);
+	const double c = longitudinal_phase_speed(b.bar);
 	const double L = b.bar.length;
-	const double plc = b.bar.density * b.bar.crossSectionArea * c;
+	const double plc = b.bar.density * b.bar.crossSection.area * c;
 
 	auto step = [&](std::complex<double> kl) {
 		const std::complex<double> w = c * kl / L;
@@ -274,11 +277,11 @@ inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, i
 
 // Frequency and decay rate of a mode, from its complex kL:  w = c kL / L
 inline double mode_frequency(const Bar& b, std::complex<double> kL) {
-	return phase_speed(b) * kL.real() / (2.0 * std::numbers::pi * b.length);
+	return longitudinal_phase_speed(b) * kL.real() / (2.0 * std::numbers::pi * b.length);
 }
 
 inline double mode_decay_rate(const Bar& b, std::complex<double> kL) {
-	return phase_speed(b) * kL.imag() / b.length;
+	return longitudinal_phase_speed(b) * kL.imag() / b.length;
 }
 
 // Forced bar, 
@@ -295,7 +298,7 @@ inline std::complex<double> complex_force(const ForcedBar& b, double w, double t
 }
 
 inline std::complex<double> forced_input_imp(const ForcedBar& b,double w) {
-	double plc = b.bar.crossSectionArea * b.bar.density * phase_speed(b.bar);
+	double plc = b.bar.crossSection.area * b.bar.density * longitudinal_phase_speed(b.bar);
 	double kl = wave_number(b.bar,w) * b.bar.length;
 	std::complex<double> zm = impedance(b.right, w);
 	std::complex<double> j = { 0.0,1.0 };
