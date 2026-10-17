@@ -1,5 +1,9 @@
 #pragma once 
+#include <stdexcept>
+#include <numbers>
 #include "long_waves.hpp"
+#include "tools/bracket_finder.hpp"
+#include "tools/brent_method.hpp"
 
 namespace audphys{
 
@@ -7,14 +11,20 @@ enum class BendingEnd { Clamped, Free, SimplySupported };
 
 inline std::array<int,2> vanishing_orders(BendingEnd e) {
 	switch(e) {
-		case(BendingEnd::Clamped): 		   return { 0,1 };
-		case(BendingEnd::Free):  		   return { 2,3 };
-		case(BendingEnd::SimplySupported): return { 0,2 };
+	case(BendingEnd::Clamped): 		   return { 0,1 };
+	case(BendingEnd::Free):  		   return { 2,3 };
+	case(BendingEnd::SimplySupported): return { 0,2 };
 	}
 	return { 0,0 };
 }
 // Bending moment -YSkappa^2 / R
 // kappa^2 = 1/S int(r^2 dS)
+
+struct BentBar {
+	BendingEnd left;
+	BendingEnd right;
+	Bar bar;
+};
 
 
 // v = std::sqrt(wc*kappa) where c is longitudinal phase speed
@@ -66,7 +76,7 @@ inline std::vector<double> bending_nat_freq_helper(const Bar& b, int n, int sign
 	return out;
 } 
 
-inline std::vector<double> symmetric_bending_nat_freq(const Bar& b, int n) { 
+inline std::vector<double> symmetric_bending_nat_freq(const Bar& b, int n) { //TODO: Simply Supported Bars
 	return bending_nat_freq_helper(b,n,1);
 }
 
@@ -74,10 +84,46 @@ inline std::vector<double> asymmetric_bending_nat_freq(const Bar& b, int n) {
 	return bending_nat_freq_helper(b,n,-1);
 }
 
+enum class Ends { ClampedClamped, FreeFree, ClampedFree }; //TODO: SimplySupported
 
-inline double bending_moment(const Bar& b, double k2, double R) { //TODO: Replace R with [1+(dy/dx)^2]^3/2 / d^2y/dx^2
+// Mode shape of a bending bar.
+inline double mode_shape(Ends e, double g, double L, double x) {
+    const double a = g * L, u = g * x;
+    switch (e) {
+        case Ends::ClampedFree: {
+            double s = (std::cosh(a) + std::cos(a)) / (std::sinh(a) + std::sin(a));
+            return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
+        }
+        case Ends::ClampedClamped: {
+            double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
+            return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
+        }
+        case Ends::FreeFree: {
+            double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
+            return (std::cosh(u) + std::cos(u)) - s * (std::sinh(u) + std::sin(u));
+        }
+    }
+    return 0.0;
+}
+
+//interior nodes only, free ends are never nodes, clamped ends always are, take freq and find zeros
+inline std::vector<double> node_positions(Ends e, double g, double L) { //TODO: FreelySupported
+	
+	auto y = [&](double x){ return mode_shape(e,g,L,x); };
+	const double eps = 1e-6 * L;
+	std::vector<double> nodes;
+
+	for (auto[a,b] : bracket_finder(y,eps, L - eps, 1000)){
+		nodes.push_back(brent(y,a,b));
+	}
+	return nodes;
+}
+
+
+inline double bending_moment(const Bar& b, double k2, double R) { // R = [1+(dy/dx)^2]^3/2 / d^2y/dx^2
 	return -1.0 * b.youngMod * b.crossSection.area * k2 / R;
 }
+
 
 
 }//audphys
