@@ -16,46 +16,62 @@ inline std::array<int,2> vanishing_orders(BendingEnd e) {
 // Bending moment -YSkappa^2 / R
 // kappa^2 = 1/S int(r^2 dS)
 
-// rectangular cross section kappa = t/\sqrt(12)
-// circular cross section kappa = a/2
-
-inline CrossSection circular_section(double a) {
-	return { std::numbers::pi * a * a, a / 2.0 }; 
-}
-
-inline CrossSection rectangular_section(double w, double t) {
-	return { w*t, t/std::sqrt(12.0)};
-}
-// general equation 1/S int(r^2 dS) = 1/S int(0,x) int (0,y) y^2 dx dy = 1/S int y^2 w(y)dy 
-
-template <class W> 
-inline CrossSection general_cross_section(W width, double y_min, double y_max, int n=1000) {
-	double area = simpson([&](double y) { return width(y); }, y_min, y_max, n);
-	double ybar = simpson([&](double y) { return y*width(y); }, y_min, y_max, n) / area;  //neutral axis
-	double I = simpson([&](double y) { return y*width(y); }, y_min, y_max, n);
-
-	return { area, std::sqrt(I / area) };
-}
 
 // v = std::sqrt(wc*kappa) where c is longitudinal phase speed
-// g = w/v
+// g = w/v,  w = gv, f = 2pi * gv
 // y(x,t) = (Ae^gx + Be^-gx)e^jwt + Ce^j(wt+gx) + De^j(wt-gx)
 // Re(y(x,t)) = [A cosh gx + B sinh gx + C cos gx + D sin gx] * cos(wt+phi)
 
 inline std::complex<double> complex_transverse_displacement( const Bar& b, std::complex<double> A, std::complex<double> B, 
-	std::complex<double> C, std::complex<double> D, double kappa, double w, double t, double x) {
+	std::complex<double> C, std::complex<double> D, double w, double t, double x) {
+	const double kappa = b.crossSection.kappa;
 	const double v = std::sqrt(w * longitudinal_phase_speed(b) * kappa);
 	const double g = w/v;
 
 	return (A * std::exp(g*x) + B * std::polar(-g*x)) * std::polar(w*t) + C * std::polar(w*t + g*x) + D * std::polar(w*t-g*x);
 }
 
-inline std::complex<double> transverse_displacement( const Bar& b, std::complex<double> A, std::complex<double> B, 
-	std::complex<double> C, std::complex<double> D, double kappa, double w, double t, double x, double phi) {
+inline double transverse_displacement( const Bar& b, double A, double B, 
+	double C, double D, double w, double t, double x, double phi) {
+	const double kappa = b.crossSection.kappa;
 	const double v = std::sqrt(w * longitudinal_phase_speed(b) * kappa);
 	const double g = w/v;
 
 	return (A * std::cosh(g*x) + B * std::sinh(g*x) + C * std::cos(g*x) + D * std::sin(g*x)) * std::cos(w*t + phi);
+}
+
+// g = w/v,  w = gv, f = 1/2pi * gv * n
+// Transverse (bending) vibration of a thin bar.
+// Dispersion: omega = kappa * c * g^2.
+// sign = +1: clamped-clamped or free-free,  cos(gL)cosh(gL) =  1
+// sign = -1: clamped-free,                  cos(gL)cosh(gL) = -1
+
+inline std::vector<double> bending_nat_freq_helper(const Bar& b, int n, int sign) {
+	auto f = [sign](double x){ return std::cos(x) - sign/std::cosh(x);};
+
+	const double kappa = b.crossSection.kappa;
+	const double L = b.length;
+	const double c = longitudinal_phase_speed(b); 
+	const double pi = std::numbers::pi;
+
+	std::vector<double> out;
+	out.reserve(n);
+	for (int i = 1; i <= n; ++i) {
+		// Root i lies in [(k-1)π, kπ]; the sign of f flips across it.
+		const int k = (sign > 0) ? i+1 : i;
+		const double x = brent(f, (k-1)*pi, k*pi);
+		const double g = x/L;
+		out.push_back((kappa * c * g * g)/(2*pi));
+	}
+	return out;
+} 
+
+inline std::vector<double> symmetric_bending_nat_freq(const Bar& b, int n) { 
+	return bending_nat_freq_helper(b,n,1);
+}
+
+inline std::vector<double> asymmetric_bending_nat_freq(const Bar& b, int n) {
+	return bending_nat_freq_helper(b,n,-1);
 }
 
 
