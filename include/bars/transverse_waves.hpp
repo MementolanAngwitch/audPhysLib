@@ -1,6 +1,10 @@
 #pragma once 
 #include <stdexcept>
 #include <numbers>
+#include <vector>
+#include <array>
+#include <complex>
+
 #include "long_waves.hpp"
 #include "tools/bracket_finder.hpp"
 #include "tools/brent_method.hpp"
@@ -38,7 +42,9 @@ inline std::complex<double> complex_transverse_displacement( const Bar& b, std::
 	const double v = std::sqrt(w * longitudinal_phase_speed(b) * kappa);
 	const double g = w/v;
 
-	return (A * std::exp(g*x) + B * std::polar(-g*x)) * std::polar(w*t) + C * std::polar(w*t + g*x) + D * std::polar(w*t-g*x);
+	const std::complex<double> j(0.0, 1.0);
+	return (A * std::exp(g*x) + B * std::exp(-g*x)) * std::exp(j*w*t) 
+	       + C * std::exp(j*(w*t + g*x))+ D * std::exp(j*(w*t - g*x));
 }
 
 inline double transverse_displacement( const Bar& b, double A, double B, 
@@ -120,8 +126,9 @@ inline std::vector<double> node_positions(Ends e, double g, double L) { //TODO: 
 }
 
 
-inline double bending_moment(const Bar& b, double k2, double R) { // R = [1+(dy/dx)^2]^3/2 / d^2y/dx^2
-	return -1.0 * b.youngMod * b.crossSection.area * k2 / R;
+inline double bending_moment(const Bar& b, double R) {
+    const double k = b.crossSection.kappa;
+    return -b.youngMod * b.crossSection.area * k * k / R;
 }
 
 

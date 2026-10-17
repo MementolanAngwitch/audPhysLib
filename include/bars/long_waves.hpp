@@ -15,6 +15,27 @@ struct CrossSection {
 	double kappa; //radius of gyration
 };
 
+// rectangular cross section kappa = t/\sqrt(12)
+// circular cross section kappa = a/2
+
+inline CrossSection circular_section(double a) {
+	return { std::numbers::pi * a * a, a / 2.0 }; 
+}
+
+inline CrossSection rectangular_section(double w, double t) {
+	return { w*t, t/std::sqrt(12.0)};
+}
+// general equation 1/S int(r^2 dS) = 1/S int(0,x) int (0,y) y^2 dx dy = 1/S int y^2 w(y)dy 
+
+template <class W> 
+inline CrossSection general_cross_section(W width, double y_min, double y_max, int n=1000) {
+	double area = simpson([&](double y) { return width(y); }, y_min, y_max, n);
+	double ybar = simpson([&](double y) { return y*width(y); }, y_min, y_max, n) / area;  //neutral axis
+	double I = simpson([&](double y) { return y*width(y); }, y_min, y_max, n);
+
+	return { area, std::sqrt(I / area) };
+}
+
 struct Bar {
 	double length;
 	CrossSection crossSection;
@@ -259,7 +280,7 @@ inline std::complex<double> mode_kl(const TerminatedBar& b, std::size_t n) {
 	throw std::runtime_error("general_freely_vibrating_kl: iteration did not converge");
 }
 
-// The lowest N modes with postive frequency, sorted. Avoids depending on how n labels each mode.
+// The lowest N modes with postive frequency, sorted. 
 inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, int N) {
 	std::vector<std::complex<double>> out;
 	for (int n = 0; static_cast<int>(out.size()) < N; ++n) {

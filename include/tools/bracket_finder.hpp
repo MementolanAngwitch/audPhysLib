@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include <utility>
 
 namespace audphys {
 
@@ -7,11 +9,11 @@ inline std::vector<std::pair<double,double>> bracket_finder(F f, double lo, doub
 	std::vector<std::pair<double,double>> out;
 	const double h = (hi - lo) / steps;
 	double a = lo, fa = f(a);
+	if (fa == 0.0) out.emplace_back(a, a);
 	for (int i = 1; i <= steps; ++i) {
 		double b = lo + i * h, fb = f(b);
-		if (fa * fb < 0) {
-			out.emplace_back(a,b);
-		}
+		if (fb == 0.0) out.emplace_back(b, b);          
+		else if (fa * fb < 0) out.emplace_back(a, b);
 		a = b;
 		fa = fb;
 	}
