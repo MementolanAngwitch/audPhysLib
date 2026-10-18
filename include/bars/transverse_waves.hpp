@@ -1,35 +1,28 @@
 #pragma once 
+
 #include <stdexcept>
 #include <numbers>
 #include <vector>
 #include <array>
 #include <complex>
+#include <cmath>
 
-#include "long_waves.hpp"
+#include "wave1d.hpp"
 #include "tools/bracket_finder.hpp"
 #include "tools/brent_method.hpp"
 
+
 namespace audphys{
 
-enum class BendingEnd { Clamped, Free, SimplySupported };
-
-inline std::array<int,2> vanishing_orders(BendingEnd e) {
-	switch(e) {
-	case(BendingEnd::Clamped): 		   return { 0,1 };
-	case(BendingEnd::Free):  		   return { 2,3 };
-	case(BendingEnd::SimplySupported): return { 0,2 };
-	}
-	return { 0,0 };
-}
 // Bending moment -YSkappa^2 / R
 // kappa^2 = 1/S int(r^2 dS)
 
-struct BentBar {
-	BendingEnd left;
-	BendingEnd right;
-	Bar bar;
-};
+inline double bending_moment(const Bar& b, double R) {
+    const double k = b.crossSection.kappa;
+    return -b.youngMod * b.crossSection.area * k * k / R;
+}
 
+// General solution 
 
 // v = std::sqrt(wc*kappa) where c is longitudinal phase speed
 // g = w/v,  w = gv, f = 2pi * gv
@@ -55,6 +48,28 @@ inline double transverse_displacement( const Bar& b, double A, double B,
 
 	return (A * std::cosh(g*x) + B * std::sinh(g*x) + C * std::cos(g*x) + D * std::sin(g*x)) * std::cos(w*t + phi);
 }
+
+
+enum class BendingEnd { Clamped, Free, SimplySupported };
+
+inline std::array<int,2> vanishing_orders(BendingEnd e) {
+	switch(e) {
+	case(BendingEnd::Clamped): 		   return { 0,1 };
+	case(BendingEnd::Free):  		   return { 2,3 };
+	case(BendingEnd::SimplySupported): return { 0,2 };
+	}
+	return { 0,0 };
+}
+
+struct BentBar {
+	BendingEnd left;
+	BendingEnd right;
+	Bar bar;
+};
+
+enum class Ends { ClampedClamped, FreeFree, ClampedFree }; //TODO: SimplySupported
+
+// Natural frequencies 
 
 // g = w/v,  w = gv, f = 1/2pi * gv * n
 // Transverse (bending) vibration of a thin bar.
@@ -90,7 +105,7 @@ inline std::vector<double> asymmetric_bending_nat_freq(const Bar& b, int n) {
 	return bending_nat_freq_helper(b,n,-1);
 }
 
-enum class Ends { ClampedClamped, FreeFree, ClampedFree }; //TODO: SimplySupported
+// Mode shapes 
 
 // Mode shape of a bending bar.
 inline double mode_shape(Ends e, double g, double L, double x) {
@@ -112,6 +127,7 @@ inline double mode_shape(Ends e, double g, double L, double x) {
     return 0.0;
 }
 
+
 //interior nodes only, free ends are never nodes, clamped ends always are, take freq and find zeros
 inline std::vector<double> node_positions(Ends e, double g, double L) { //TODO: FreelySupported
 	
@@ -124,13 +140,5 @@ inline std::vector<double> node_positions(Ends e, double g, double L) { //TODO: 
 	}
 	return nodes;
 }
-
-
-inline double bending_moment(const Bar& b, double R) {
-    const double k = b.crossSection.kappa;
-    return -b.youngMod * b.crossSection.area * k * k / R;
-}
-
-
 
 }//audphys

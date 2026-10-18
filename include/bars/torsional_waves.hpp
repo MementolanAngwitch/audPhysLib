@@ -1,18 +1,18 @@
 #pragma once 
+
 #include <numbers>
-#include "long_waves.hpp"
+#include <cmath>
+#include "bars.hpp"
+
 
 namespace audphys{
+
 // For circular cross section
 // stress = shear_mod * radius * (stress_angle / plate_length)
 // df = shear_mod (plate_width * plate_thickness) * radius * (stress_angle / plate_length)
 // dt = shear_mod (2pi * r^3) (stress_angle / plate_length) * tube_thickness
 // t = shear_mod 1/2 pi a^4 (stress_angle / plate_length)
 // c^2 = shear_mod/density
-// torsional bc: (1) fixed end, phi = 0.
-// (2) free end, t = 0 dphi/dx = 0 
-// (3) mass-loaded, dphi/dx = (dphi^2/dx^2)I where I is inertia of the load about the axis of the bar.
-// solutions for longitudinal waves and waves on strings apply here
 
 inline double stress(const Bar& b, double stress_angle, double plate_length) {
 	const double r = std::sqrt(b.crossSection.area / std::numbers::pi);
@@ -38,5 +38,15 @@ inline double total_torsion(const Bar& b, double stress_angle, double plate_leng
 inline double torsional_phase_speed(const Bar& b) {
 	return std::sqrt(b.shearMod / b.density);
 }
+
+// torsional bc: (1) fixed end, phi = 0.
+// (2) free end, t = 0 dphi/dx = 0 
+// (3) mass-loaded, dphi/dx = (dphi^2/dx^2)I where I is inertia of the load about the axis of the bar.
+
+// =============================================================================
+// Layers 5 and 6: modal machinery and applications
+// =============================================================================
+
+// solutions for longitudinal waves and waves on strings apply here
 
 }
