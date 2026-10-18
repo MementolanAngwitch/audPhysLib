@@ -8,8 +8,7 @@
 #include <algorithm>
 #include "tools/brent_method.hpp"
 #include "wave1d.hpp"
-#inlcude "longitduinal_waves.hpp"
-namespace audphys{
+namespace audphys::bar{
 
 
 //Mass loaded bar with mass at x=L and free at x=0

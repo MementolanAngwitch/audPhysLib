@@ -3,9 +3,10 @@
 #include <numbers>
 #include <cmath>
 #include "bars.hpp"
+#include "longitudinal_waves.hpp"
 
 
-namespace audphys{
+namespace audphys::bar{
 
 // For circular cross section
 // stress = shear_mod * radius * (stress_angle / plate_length)
@@ -43,10 +44,13 @@ inline double torsional_phase_speed(const Bar& b) {
 // (2) free end, t = 0 dphi/dx = 0 
 // (3) mass-loaded, dphi/dx = (dphi^2/dx^2)I where I is inertia of the load about the axis of the bar.
 
-// =============================================================================
-// Layers 5 and 6: modal machinery and applications
-// =============================================================================
 
 // solutions for longitudinal waves and waves on strings apply here
+
+inline Bar as_longitudinal(const Bar& b) {
+	const double a = std::sqrt(b.crossSection.area / std::numbers::pi);
+	const double J = 0.5 * std::numbers::pi * a * a * a * a;
+	return Bar{ b.length, CrossSection{ J, b.crossSection.kappa }, b.shearMod, b.density, b.shearMod };
+} //assumes solid circular rod
 
 }

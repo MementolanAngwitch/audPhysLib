@@ -11,8 +11,7 @@
 #include "tools/bracket_finder.hpp"
 #include "tools/brent_method.hpp"
 
-
-namespace audphys{
+namespace audphys::bar{
 
 // Bending moment -YSkappa^2 / R
 // kappa^2 = 1/S int(r^2 dS)

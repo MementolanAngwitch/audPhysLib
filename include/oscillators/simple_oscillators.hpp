@@ -1,67 +1,8 @@
 #pragma once 
 #include <cmath>
-#include <numbers>
-#include <cassert>
-#include <stdexcept>
-namespace audphys {
+#include "equation_of_motion.hpp"
 
-struct SimpleOscillator { // should probably be a class but whatever
-    double m;   // kg
-    double s;   // N/m
-    SimpleOscillator(double m_, double s_) : m(m_), s(s_) {
-        if (!(std::isfinite(m) && m > 0)) throw std::invalid_argument("mass must be positive and finite");
-        if (!(std::isfinite(s) && s > 0)) throw std::invalid_argument("stiffness must be positive and finite");
-    }
-};
-struct InitialConditions {  double x0; double u0; }; 
-struct AmplitudePhase { double A; double phi; };
-
-// omega = 2pi * f
-inline double nat_angular_freq(const SimpleOscillator& o) {
-	return std::sqrt(o.s / o.m);
-}
-
-inline double angular_from_frequency(double nat_freq) {
-	assert(nat_freq > 0);
-	return nat_freq * 2 * std::numbers::pi;
-}
-
-inline double nat_frequency(const SimpleOscillator& o) {
-	return std::sqrt(o.s/o.m) / (2 * std::numbers::pi);
-}
-
-inline double frequency_from_angular(double ang_freq) {
-	return ang_freq / (2 * std::numbers::pi);
-}
-
-// T = 1/f
-inline double period(double f0) {
-	assert(f0 > 0);
-	return 1.0/f0;
-}
-
-// Wave equation general solution: x = A1 cos (omega * t) + A2 cos (omega * t)
-// A = (x^2 + (u/omega)^2)^1/2, phi = tan^-1 (-u/(x * omega))
-
-inline AmplitudePhase to_amp_phase( const SimpleOscillator& o, InitialConditions ic) {
-	double A2 = ic.u0 / nat_angular_freq(o);
-	return {
-		std::sqrt(ic.x0 * ic.x0 + A2 * A2),
-		std::atan2(-A2, ic.x0)
-	};
-}
-
-struct Motion {
-    SimpleOscillator osc;
-    AmplitudePhase ap;
-
-    // From initial conditions: the conversion uses this oscillator, so they always match
-    Motion(SimpleOscillator o, InitialConditions ic) : osc(o), ap(to_amp_phase(o, ic)) {}
-
-    Motion(SimpleOscillator o, AmplitudePhase a) : osc(o), ap(a) {
-        if (!(std::isfinite(ap.A) && ap.A >= 0)) throw std::invalid_argument("amplitude must be non-negative");
-    }
-};
+namespace audphys::oscillator {
 
 // x = x0 cos(omega * t) + (u/omega) sin (omega * t)
 inline double position(const SimpleOscillator& o, const InitialConditions& ic, double t) {

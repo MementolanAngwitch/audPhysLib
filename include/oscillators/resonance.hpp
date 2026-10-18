@@ -1,5 +1,6 @@
 #pragma once
-#include "forced_oscillators.hpp"
+#include <cmath>
+#include "equation_of_motion.hpp"
 
 //Mechanical Resonance 
 //w0 is where Xm vanishes and Zm = Rm
@@ -12,7 +13,12 @@
 // Q = w0/(2beta)
 // Q = 1/2 w0 t (t = relaxation time)
 
-namespace audphys {
+namespace audphys::oscillator {
+
+inline double quality_factor(const DampedOscillator& o) {
+	double w0 = nat_angular_freq(o.base);
+	return w0*o.base.m / o.Rm;
+}
 
 inline double resonant_speed(const DampedOscillator& o, const Drive& d, double t) {
 	double w0 = nat_angular_freq(o.base);
@@ -22,11 +28,6 @@ inline double resonant_speed(const DampedOscillator& o, const Drive& d, double t
 inline double resonant_position(const DampedOscillator& o, const Drive& d, double t) {
 	double w0 = nat_angular_freq(o.base);
 	return (d.F / (w0 * o.Rm)) * std::sin(w0 * t);
-}
-
-inline double quality_factor(const DampedOscillator& o) {
-	double w0 = nat_angular_freq(o.base);
-	return w0*o.base.m / o.Rm;
 }
 
 }

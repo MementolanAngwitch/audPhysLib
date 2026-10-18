@@ -1,8 +1,9 @@
 #pragma once
-#include "forced_oscillators.hpp"
+#include <cmath>
 #include <vector>
+#include "oscillators.hpp"
 
-namespace audphys{
+namespace audphys::oscillator {
 //Linear Combination
 //Same angular frequencies
 // x = A cos(wt+phi)

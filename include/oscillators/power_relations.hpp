@@ -1,7 +1,8 @@
 #pragma once
-#include "forced_oscillators.hpp"
 #include <complex>
-namespace audphys{
+#include <cmath>
+#include "equation_of_motion.hpp"
+namespace audphys::oscillator {
 // Power Relations
 //instantanetous power (watts) PI_i  = (F^2/Zm) cos(wt) * cos(wt - theta)
 //average power (watts)        PI = F^2/(2*Zm) * cos(theta) = (F^2Rm)/(2Zm^2) 

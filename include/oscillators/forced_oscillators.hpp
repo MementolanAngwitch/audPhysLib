@@ -1,27 +1,9 @@
 #pragma once
-#include "damped_oscillators.hpp"
 #include <complex>
+#include <cmath>
+#include "equation_of_motion.hpp"
 
-namespace audphys {
-
-// Forced oscillations: driving force f = F e^{jwt}   (w = omega, j = imaginary unit)
-struct Drive { double F; double w; };	// force amplitude [N], angular frequency [rad/s]
-
-// Reactance Xm = wm - s/w   [kg/s]
-inline double mech_reactance(const DampedOscillator& o, const Drive& d) {
-	return d.w * o.base.m - o.base.s / d.w;
-}
-
-// Impedance Zm = Rm + jXm   [kg/s]
-// Magnitude: std::abs(Zm) = (Rm^2 + Xm^2)^(1/2)
-inline std::complex<double> mech_impedance(const DampedOscillator& o, const Drive& d) {
-	return { o.Rm, mech_reactance(o, d) };
-}
-
-// Phase angle theta = atan2(Xm, Rm)   [rad]   (same as std::arg(Zm))
-inline double phase_angle(const DampedOscillator& o, const Drive& d) {
-	return std::atan2(mech_reactance(o, d), o.Rm);
-}
+namespace audphys::oscillator {
 
 // Complex velocity amplitude u_hat = F / Zm   [m/s]
 inline std::complex<double> velocity_phasor(const DampedOscillator& o, const Drive& d) {

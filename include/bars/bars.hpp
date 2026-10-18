@@ -18,7 +18,7 @@ struct Bar {
 	double youngMod;
 	double density;
 	double shearMod;
-}
+};
 
 inline double bar_mass(const Bar& b) {
 	return b.length * b.crossSection.area * b.density;
@@ -38,11 +38,11 @@ struct Termination {
 struct WaveAmplitude {
 	std::complex<double> A;
 	std::complex<double> B;
-}
+};
 
-// struct WaveModeAmplitudes {
-// 	std::vector<WaveAmplitude> amps;
-// }
+struct WaveModeAmplitudes {
+	std::vector<WaveAmplitude> amps;
+};
 
 
 }
