@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include "tools/brent_method.hpp"
+#include "bars.hpp"
 
 namespace audphys{
 struct CrossSection {
@@ -41,6 +42,7 @@ struct Bar {
 	CrossSection crossSection;
 	double youngMod;
 	double density;
+	double shearMod;
 
 	Bar(double l_, CrossSection cs_,double y_,double d_) : length(l_), crossSection(cs_),youngMod(y_), density(d_){
 		if (!(std::isfinite(l_) && l_ > 0)) throw std::invalid_argument("Invalid bar length");
