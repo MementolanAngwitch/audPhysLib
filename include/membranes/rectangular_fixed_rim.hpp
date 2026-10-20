@@ -15,7 +15,7 @@ struct RectangularMembrane {
 };
 
 // standing wave eq y(x,z,t) = A sin(k_x x)sin(k_z z) e^jwt
-inline std::complex<double> displacement(const RectangularMembrane& membrane, double w, double x, double z, double t, std::size_t n, std::size_t m) {
+inline std::complex<double> rectangular_displacement(const RectangularMembrane& membrane, double w, double x, double z, double t, std::size_t n, std::size_t m) {
 	const double pi = std::numbers::pi;
 	const double kx = n * pi / membrane.Lx;
 	const double kz = n * pi / membrane.Lz;
