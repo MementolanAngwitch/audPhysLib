@@ -6,6 +6,6 @@
 namespace audphys::membrane{
 
 inline double stretched_phase_speed(const Membrane& m){
-	return std::sqrt(m.T / m.ps);
+	return std::sqrt(m.tension / m.ps);
 }
 }
