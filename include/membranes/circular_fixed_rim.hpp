@@ -37,7 +37,7 @@ struct CircularMembrane{
 	Membrane membrane;
 	double a; // radius
 };
-
+// Bessel function, second kind bessel is 0 for membranes with origin
 inline double first_kind_bessel(std::size_t m, double x) {
 	const double constant = (x / 2.0) * (x / 2.0);
 	const double a0 = std::pow(x/2.0, m) / std::tgamma(m + 1.0);
@@ -66,9 +66,13 @@ inline std::vector<double> bessel_zero(std::size_t m, std::size_t N) {
 	}
 	return zeros;
 }
-
+// Free vibrating circular membrane
 inline circular_wave_number(const CircularMembrane& membrane, std::size_t m, std::size_t n) {
-	return bessel_zero(m,n)[n] / membrane.a;
+	return bessel_zero(m,n+1)[n] / membrane.a;
+}
+
+inline circular_nat_freqs(const CircularMembrane& membrane, int m, int n) {
+	return bessel_zero(m,n+1)[n] * stretched_phase_speed(membrane.membrane) / (2 * std::numbers::pi * membrane.a);
 }
 
 inline std::complex<double> complex_circular_displacement(const CircularMembrane& membrane, double phi, double gamma, std::size_t m, size_t n, 
@@ -83,6 +87,14 @@ inline std::complex<double> real_circular_displacement(const CircularMembrane& m
 	const double Amn = 1.0;
 	const double kmn = circular_wave_number(membrane,m,n);
 	return Amn * first_kind_bessel(m,kmn*r)*std::cos(m*theta+gamma)*std::cos(w*t + phi);
+}
+
+//Symmetric modes, m=0 
+
+//For non symmetric modes, average amplitude displacement is zero
+inline double average_displacement_amplitude(const CircularMembrane& membrane, double A, double n) {
+	const double k = circular_wave_number(membrane, 0, n);
+	return ((2*A)/(k*membrane.a)) * first_kind_bessel(0, k*membrane.a);
 }
 
 }
