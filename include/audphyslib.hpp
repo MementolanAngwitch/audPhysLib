@@ -13,3 +13,8 @@
 #include "tools\composite_simpson.hpp"
 #include "tools\wav_writer.hpp"
 #include "transforms\fourier.hpp"
+#include "membranes\2dwaves.hpp"
+#include "membranes\circular_fixed_rim.hpp"
+#include "membranes\rectangular_fixed_rim.hpp"
+#include "membranes\membranes.hpp"
+#include "membranes\membrane_modes.hpp"

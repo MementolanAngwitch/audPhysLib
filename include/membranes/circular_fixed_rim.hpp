@@ -1,105 +1,85 @@
-#pragma once
+#pragma once 
 
-// Bessel's equation d^2 R/dr^2 + 1/r dR/dd + (k^2 - m^2/r^2)R = 0 
-// Solutions are bessel functions of order m of the first kind J_m(kr) and second kind Y_m(kr)
-// R(r) = AJ_m(kr) + BY_m(kr)
-// if the membrane extends across the origin, B =0
-// Application of clamped conditions R(a) = 0 and J_m(ka) = 0 yields:
-// y_mn (r,theta,t) = A_mn J_m (k_mn r) cos(mtheta + gamma_mn)e^(jw_mn t), 
-// k_mn a = j_mn where j_mn is the argument that causes j_m to be zero
-
-
-
-// natural frequenices
-// f_mn = j_mn c/(2pi *a)
-
-
-// Physical motion is real part of y_mn
-// y_mn(r,theta,t) = A_mn J_m (k_mn r) cos(m*theta + gamma_mn) cos(w_mn t + phi_mn) where A_mn exp(j phi_mn)
-// and gamma_mn depends on initial location of excitation
-
-
-// m determines # of radial nodal lines and n determines # of nodal circles. n >= 1
-
-// Bessel function of the first kind: j_n(x) = sum{k=[0,infty)} (-1)^k / (k!(k+n)!) (x/2)^(2k+n)
-// a_k = a_k-1 * (x/2)^2 * 1/k * 1/(n+k)
-
-
-#include "membranes.hpp"
-#include "2dwave.hpp"
-#include "tools\brent_method.hpp"
-#include <complex>
+#include <algorithm>
 #include <cmath>
+#include <numbers>
+#include <stdexcept>
 #include <vector>
+#include "2dwave.hpp"
+#include "membrane_modes.hpp"
+#include "tools/bessel.hpp"
 
-namespace audphys::membrane {
-struct CircularMembrane{
-	Membrane membrane;
+namespace audphys::membrane{
+
+struct CircularMode {
+	std::size_t m,n; // nodal diamters, nodal circles
 	double a; // radius
+	double k; // j_mn/a
+	double w; // natural angular frequency
+	double gamma = 0.0; // orientation of nodal features
+	double A = 1.0, phi = 0.0, beta = 0.0;
 };
-// Bessel function, second kind bessel is 0 for membranes with origin fails for large x consult numerical recipes
-inline double first_kind_bessel(std::size_t m, double x) {
-	const double constant = (x / 2.0) * (x / 2.0);
-	const double a0 = std::pow(x/2.0, m) / std::tgamma(m + 1.0);
-	double term = a0;
-	double sum = a0;
 
-	for (std::size_t i = 1; i < 500; ++i) {
-		term *= -constant * (1.0/i) * (1.0/(m+i));
-		sum += term;
-		if (std::abs(term) <= 1e-17 * std::abs(sum)) break;
+// w = c·jmn/a
+
+inline CircularMode circular_mode(const Membrane& mem, double a, std::size_t m, std::size_t n) { // don't use, inefficeint 
+	const double k = bessel_zero(m,n)[n-1] / mem.a;
+	const double c = stretched_phase_speed(mem);
+	return{m,n,a,k,c*k};
+}
+
+inline std::vector<CircularMode> circular_modes(const Membrane& mem, double a, std::size_t m_max, std::size_t n_max) {
+	std::vector<CircularMode> out;
+	out.reserve(n_max * (m_max+1));
+	const double c = stretched_phase_speed(mem);
+	for (std::size_t m = 0; m <= m_max; ++m) {
+		const std::vector<double> zeros = bessel_zero(m,n_max);
+		for (std::size_t n = 1; n <= n_max; ++n) {
+			const double k = bessel_zero(m,n)[n-1] / mem.a;
+			out.push_back({m, n, a, k, c*k}).;
+		}
 	}
-	return sum;
+	std::sort(out.begin(), out.end(), [](const CircularMode& p, const CircularMode& q) { return p.w < q.w; });
+	return out;
 }
 
-inline std::vector<double> bessel_zero(std::size_t m, std::size_t N) {
-	auto f = [m](double x){ return first_kind_bessel(m,x); };
-	const double h = 1.0; //gap between is always 3 or greater
-	std::vector<double> zeros;
-	zeros.reserve(N);
-	double a = m, fa = f(a); // first zero lies beyond x = m
-	while (zeros.size() < N) {
-		const double b = a + h, fb = f(b);
-		if (fb == 0.0) zeros.push_back(b);
-		else if (fa*fb < 0) zeros.push_back(brent(f,a,b)); // zero between a and b
-		a = b; fa = fb;
+// Polar form. Zero outside the membrane.
+inline double mode_shape_polar(const CircularMode& md, double r, double theta) {
+	if (r < 0 || r > md.a) return 0.0;
+	return first_kind_bessel(md.m, md.k * r) * std::cos(md.m * theta + md.gamma);
+}
+
+// Cartesian form origin at the centre.
+inline double mode_shape(const CircularMode& md, double x, double z) {
+	return mode_shape_polar(md, std::hypot(x, z), std::atan2(z, x));
+}
+
+// Interior nodal circles r = j_mq / k, q = 1..n-1 (the rim, q = n, is left out).
+inline std::vector<double> nodal_circles(const CircularMode& md) {
+	std::vector<double> out;
+	if (md.n < 2) return out;
+	const std::vector<double> zeros = bessel_zero(md.m, md.n - 1);
+	for (double j : zeros) out.push_back(j / md.k);
+	return out;
+}
+
+// Nodal diameters: angles where cos(m theta + gamma) = 0, theta = ((q + 1/2) pi - gamma) / m, q = 0..m-1.
+inline std::vector<double> nodal_diameters(const CircularMode& md) {
+	const double pi = std::numbers::pi;
+	std::vector<double> out;
+	for (std::size_t q = 0; q < md.m; ++q) {
+		double theta = std::fmod(((q + 0.5) * pi - md.gamma) / md.m, pi);
+		if (theta < 0) theta += pi;
+		out.push_back(theta);
 	}
-	return zeros;
-}
-// Free vibrating circular membrane
-inline circular_wave_number(const CircularMembrane& membrane, std::size_t m, std::size_t n) {
-	return bessel_zero(m,n+1)[n] / membrane.a;
+	std::sort(out.begin(), out.end());
+	return out;
 }
 
-inline circular_nat_freqs(const CircularMembrane& membrane, int m, int n) {
-	return bessel_zero(m,n+1)[n] * stretched_phase_speed(membrane.membrane) / (2 * std::numbers::pi * membrane.a);
+inline double average_displacement_amplitude(const CircularMode& md) {
+	if (md.m != 0) return 0.0;
+	const double ka = md.k * md.a;
+	return md.A * 2.0 * first_kind_bessel(1, ka) / ka;
 }
-
-inline std::complex<double> complex_circular_displacement(const CircularMembrane& membrane, double phi, double gamma, std::size_t m, size_t n, 
-							double r, double theta, double t, double w) {
-	const double Amn = 1.0; //TODO: Need amplitude, phi and gamma equation
-	const double kmn = circular_wave_number(membrane, m,n);
-	return Amn * first_kind_bessel(m,kmn*r) * std::cos(m*theta + gamma) * std::polar(1.0, w*t);
-}
-
-inline std::complex<double> real_circular_displacement(const CircularMembrane& membrane, double phi, double gamma, std::size_t m, size_t n, 
-							double r, double theta, double t, double w) {
-	const double Amn = 1.0;
-	const double kmn = circular_wave_number(membrane,m,n);
-	return Amn * first_kind_bessel(m,kmn*r)*std::cos(m*theta+gamma)*std::cos(w*t + phi);
-}
-
-//Symmetric modes, m=0 
-
-//For non symmetric modes, average amplitude displacement is zero
-inline double average_displacement_amplitude(const CircularMembrane& membrane, double A, double n) {
-	const double k = circular_wave_number(membrane, 0, n);
-	return ((2*A)/(k*membrane.a)) * first_kind_bessel(0, k*membrane.a);
-}
-
-inline MembraneMode circular_mode_shape(const CircularMembrane& membrane, int m, int n, double A, double beta) {
-	 
-}
-
 
 }
