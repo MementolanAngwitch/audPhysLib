@@ -18,7 +18,7 @@ struct RectangularMembrane {
 inline std::complex<double> rectangular_displacement(const RectangularMembrane& membrane, double w, double x, double z, double t, std::size_t n, std::size_t m) {
 	const double pi = std::numbers::pi;
 	const double kx = n * pi / membrane.Lx;
-	const double kz = n * pi / membrane.Lz;
+	const double kz = m * pi / membrane.Lz;
 	const double A = 1.0; // TODO: Max amplitude is determined by initial excitaiton
 
 	return A * std::sin(kx * x) * sin(kz * z) * std::polar(1.0, w*t);

@@ -37,7 +37,7 @@ struct CircularMembrane{
 	Membrane membrane;
 	double a; // radius
 };
-// Bessel function, second kind bessel is 0 for membranes with origin
+// Bessel function, second kind bessel is 0 for membranes with origin fails for large x consult numerical recipes
 inline double first_kind_bessel(std::size_t m, double x) {
 	const double constant = (x / 2.0) * (x / 2.0);
 	const double a0 = std::pow(x/2.0, m) / std::tgamma(m + 1.0);
@@ -45,7 +45,7 @@ inline double first_kind_bessel(std::size_t m, double x) {
 	double sum = a0;
 
 	for (std::size_t i = 1; i < 500; ++i) {
-		term *= constant * (1/i) * (1/(m+i));
+		term *= -constant * (1.0/i) * (1.0/(m+i));
 		sum += term;
 		if (std::abs(term) <= 1e-17 * std::abs(sum)) break;
 	}
@@ -58,7 +58,7 @@ inline std::vector<double> bessel_zero(std::size_t m, std::size_t N) {
 	std::vector<double> zeros;
 	zeros.reserve(N);
 	double a = m, fa = f(a); // first zero lies beyond x = m
-	while (static_cast<int>(zeros.size()) < N) {
+	while (zeros.size() < N) {
 		const double b = a + h, fb = f(b);
 		if (fb == 0.0) zeros.push_back(b);
 		else if (fa*fb < 0) zeros.push_back(brent(f,a,b)); // zero between a and b
@@ -96,5 +96,10 @@ inline double average_displacement_amplitude(const CircularMembrane& membrane, d
 	const double k = circular_wave_number(membrane, 0, n);
 	return ((2*A)/(k*membrane.a)) * first_kind_bessel(0, k*membrane.a);
 }
+
+inline MembraneMode circular_mode_shape(const CircularMembrane& membrane, int m, int n, double A, double beta) {
+	 
+}
+
 
 }
