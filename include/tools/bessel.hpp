@@ -31,7 +31,7 @@ inline std::vector<double> bessel_zero(std::size_t m, size_t N) {
 
 	while (zeros.size() < N) {
 		const double b = a + h, fb = f(b);
-		if (fb = 0.0) zeros.push_back(b);
+		if (fb == 0.0) zeros.push_back(b);
 		if (fa*fb < 0.0) zeros.push_back(brent(f,a,b));
 		a = b; fa = fb;
 	}

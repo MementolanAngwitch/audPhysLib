@@ -23,7 +23,7 @@ struct CircularMode {
 // w = c·jmn/a
 
 inline CircularMode circular_mode(const Membrane& mem, double a, std::size_t m, std::size_t n) { // don't use, inefficeint 
-	const double k = bessel_zero(m,n)[n-1] / mem.a;
+	const double k = bessel_zero(m,n)[n-1] / a;
 	const double c = stretched_phase_speed(mem);
 	return{m,n,a,k,c*k};
 }
@@ -35,8 +35,8 @@ inline std::vector<CircularMode> circular_modes(const Membrane& mem, double a, s
 	for (std::size_t m = 0; m <= m_max; ++m) {
 		const std::vector<double> zeros = bessel_zero(m,n_max);
 		for (std::size_t n = 1; n <= n_max; ++n) {
-			const double k = bessel_zero(m,n)[n-1] / mem.a;
-			out.push_back({m, n, a, k, c*k}).;
+			const double k = bessel_zero(m,n)[n-1] / a;
+			out.push_back({m, n, a, k, c*k});
 		}
 	}
 	std::sort(out.begin(), out.end(), [](const CircularMode& p, const CircularMode& q) { return p.w < q.w; });
