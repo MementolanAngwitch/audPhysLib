@@ -59,8 +59,8 @@ inline std::vector<double> nodal_lines_z(const RectangularMode& md) {
 
 inline void amplitude(std::vector<RectangularMode>& mds, double I, double x0, double z0) {
 	//Check that x0,z0 is on the membrane
-	const double V = I / mds[0].membrane.ps;
 	for (RectangularMode& md : mds) {
+		const double V = I / md.membrane.ps;
 		md.A = 4.0 * V / (md.Lx * md.Lz) * (std::sin(md.kx * x0) * std::sin(md.kz * z0)) / md.w;
 	}
 }

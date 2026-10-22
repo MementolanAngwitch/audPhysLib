@@ -13,6 +13,7 @@ namespace audphys::membrane{
 
 struct CircularMode {
 	std::size_t m,n; // nodal diamters, nodal circles
+	Membrane membrane;
 	double a; // radius
 	double k; // j_mn/a
 	double w; // natural angular frequency
@@ -80,6 +81,30 @@ inline double average_displacement_amplitude(const CircularMode& md) {
 	if (md.m != 0) return 0.0;
 	const double ka = md.k * md.a;
 	return md.A * 2.0 * first_kind_bessel(1, ka) / ka;
+}
+
+inline void amplitude(std::vector<CircularMode>& mds, double I, double r0, double theta0) {
+	// check that r0,theta0 is on the membrane
+	for (CircularMode& md : mds) {
+		const double V = I / md.membrane.ps;
+		double epsilon = 2.0;
+		if (md.m==0) epsilon = 1.0;
+
+		md.A = V / (std::numbers::pi * md.a * md.a) * (epsilon / md.w) * 
+		(first_kind_bessel(md.m, md.k*r0) / (first_kind_bessel(md.m+1,md.k*md.a)*first_kind_bessel(md.m+1,md.k*md.a)));
+	}
+}
+
+inline double mode_displacement(const CircularMode& md, double r, double theta, double t) {
+	return md.A * first_kind_bessel(md.m, md.k*r) * std::cos(md.m * theta) * std::sin(md.w * t);
+}
+
+inline double total_mode_displacement(const std::vector<CircularMode>& mds, double r, double theta, double t) {
+	double sum = 0.0;
+	for (const CircularMode& md : mds) {
+		sum += mode_displacement(md,r,theta,t);
+	}
+	return sum;
 }
 
 }
