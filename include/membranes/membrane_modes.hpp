@@ -35,5 +35,4 @@ inline double total_displacement(const std::vector<M>& modes, double x, double z
 	for (const M& md : modes) out += displacement(md,x,z,t);
 	return out;
 }
-
 }

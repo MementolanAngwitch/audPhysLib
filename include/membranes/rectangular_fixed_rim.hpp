@@ -11,16 +11,17 @@ namespace audphys::membrane {
 
 struct RectangularMode {
 	std::size_t n,m;
+	Membrane membrane;
 	double Lx, Lz; // side lengths
 	double kx, kz; // n pi/Lx, m pi/Lz
 	double w;
-	double A = 1.0, phi = 0.0, beta = 0.0;
+	double A = 1.0, phi = 0.0, beta = 0.0; //picking phi =0.0 so y(x,z,0) = 0
 };
 
 inline RectangularMode rectangular_mode(const Membrane& mem, double Lx, double Lz, std::size_t n, std::size_t m) {
 	const double pi = std::numbers::pi; // w = kc = sqrt(kx^2 + kz^2) c
-	const double kx =  n*pi/Lx
-	const double kz = m*pi/Lz
+	const double kx =  n*pi/Lx;
+	const double kz = m*pi/Lz;
 	return { n,m,Lx,Lz,kx,kz, stretched_phase_speed(mem) * std::sqrt(kx*kx + kz*kz)};
 }
 
@@ -50,6 +51,30 @@ inline std::vector<double> nodal_lines_z(const RectangularMode& md) {
 	std::vector<double> out;
 	for (int p = 1; p < md.m; ++p) out.push_back(p * md.Lz / md.m);
 	return out;
+}
+
+// For rectangular fixed rim, the real standing wave associated with the n,m mode can be written as 
+// ynm(x,z,t) = Anm sin(k_xn x) sin(K_zm z) sin(w_nm t + phi_nm)
+// Anm = 4V/(LxLz) (sin(k_xn x_0) sin(k_zm z_0))/w_nm, V = I/ps
+
+inline void amplitude(std::vector<RectangularMode>& mds, double I, double x0, double z0) {
+	//Check that x0,z0 is on the membrane
+	const double V = I / mds[0].membrane.ps;
+	for (RectangularMode& md : mds) {
+		md.A = 4.0 * V / (md.Lx * md.Lz) * (std::sin(md.kx * x0) * std::sin(md.kz * z0)) / md.w;
+	}
+}
+
+inline double mode_displacement(const RectangularMode& md, double x, double z, double t) {
+	return md.A * std::sin(md.kx * x)*std::sin(md.kz * z)*sin(md.w * t + md.phi);
+}
+
+inline double total_mode_displacement(const std::vector<RectangularMode>& mds, double x, double z, double t) {
+	double sum = 0.0;
+	for (const RectangularMode& m : mds) {
+		sum += mode_displacement(m, x,z,t);
+	}
+	return sum;
 }
 
 }
