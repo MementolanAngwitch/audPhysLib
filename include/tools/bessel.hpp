@@ -2,24 +2,42 @@
 
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include "brent_method.hpp"
 
 namespace audphys {
-// fails at x = 20 
-// a_k = a_k-1 * (x/2)^2 * 1/k * 1/(n+k) * -1
-
-//TODO: Current implementation fails for large x
+// Using Miller's Backward Recurrence, safe for X < 200
+// J_{n-1} (x) = (2n/x) J_n(x) - J_{n+1} (x)
+// 1. Choose N such that N >> m and x set J_{N+1} = 0 and J_N = small and recur down to J_0 
+//    values are correct up to unknown scale factor
+// 2. Find the unknown factor by using identity J_0 + 2(J_2 + J_4 + J_6 + ...) = 1
+// 3. Divide the J_m recorded by that sum
 inline double first_kind_bessel(std::size_t m, double x) {
-	const double constant = -1.0 * (x/2.0) * (x/2.0);
-	double term = std::pow(x/2.0,m) / std::tgamma(m+1.0);
-	double sum = term;
+	if (x == 0.0) return m == 0 ? 1.0 : 0.0;
+	const double ax = std::abs(x);
 
-	for (std::size_t k = 1; k < 500; ++k) {
-		term *= constant * (1.0 / k) * (1.0 / (m+k));
-		sum += term;
-		if (std::abs(term) <= 1e-17 * std::abs(sum)) break;
+	std::size_t N = std::static_cast<std::size_t>(x) * m * 40;
+	double Jnext = 0.0;
+	double JN = 1e-20;
+	double Jprev;
+	double Jm;
+
+	double sum = 0.0;
+
+	while (N > 0) {
+		Jprev = (2.0 * N)/x * JN - Jnext;
+		N -= 1;
+		if (N == m) Jm = Jprev;
+		if (N % 2 == 0 && N != 0) sum += 2.0 * Jprev; 
+		if (N == 0) sum += Jprev;
 	}
-	return sum;
+
+	const double val = Jm / sum;
+	if (x < 0 && (m%2)) val = -val; // J_m(-x) = (-1)^m J_m(x)
+	return val;
+
+
+
 }
 
 // I_n(z) = sum_{k=0, inf} (x/2)^(2k+m) / k!(m+k)!
