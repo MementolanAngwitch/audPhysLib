@@ -36,7 +36,7 @@ inline bool write_mono_wav(const std::string fileName, int sample_rate, int bit_
 	file.write("WAVE",4);
 
 	//Format chunk
-	file.write("fmt",4);
+	file.write("fmt ",4);
 	write_le(file,16,4); //size
 	write_le(file, 1,2); //compression code
 	write_le(file, 1,2); //number of channels

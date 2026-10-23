@@ -10,8 +10,8 @@
 namespace audphys::membrane {
 
 struct RectangularMode {
-	std::size_t n,m;
 	Membrane membrane;
+	std::size_t n,m;
 	double Lx, Lz; // side lengths
 	double kx, kz; // n pi/Lx, m pi/Lz
 	double w;
@@ -22,7 +22,7 @@ inline RectangularMode rectangular_mode(const Membrane& mem, double Lx, double L
 	const double pi = std::numbers::pi; // w = kc = sqrt(kx^2 + kz^2) c
 	const double kx =  n*pi/Lx;
 	const double kz = m*pi/Lz;
-	return { n,m,Lx,Lz,kx,kz, stretched_phase_speed(mem) * std::sqrt(kx*kx + kz*kz)};
+	return { mem,n,m,Lx,Lz,kx,kz, stretched_phase_speed(mem) * std::sqrt(kx*kx + kz*kz)};
 }
 
 inline std::vector<RectangularMode> rectangular_modes(const Membrane& mem, double Lx, double Lz, std::size_t n_max, std::size_t m_max) {

@@ -12,8 +12,8 @@
 namespace audphys::membrane{
 
 struct CircularMode {
-	std::size_t m,n; // nodal diamters, nodal circles
 	Membrane membrane;
+	std::size_t m,n; // nodal diamters, nodal circles
 	double a; // radius
 	double k; // j_mn/a
 	double w; // natural angular frequency
@@ -26,7 +26,7 @@ struct CircularMode {
 inline CircularMode circular_mode(const Membrane& mem, double a, std::size_t m, std::size_t n) { // don't use, inefficeint 
 	const double k = bessel_zero(m,n)[n-1] / a;
 	const double c = stretched_phase_speed(mem);
-	return{m,n,a,k,c*k};
+	return{mem,m,n,a,k,c*k};
 }
 
 inline std::vector<CircularMode> circular_modes(const Membrane& mem, double a, std::size_t m_max, std::size_t n_max) {
@@ -37,7 +37,7 @@ inline std::vector<CircularMode> circular_modes(const Membrane& mem, double a, s
 		const std::vector<double> zeros = bessel_zero(m,n_max);
 		for (std::size_t n = 1; n <= n_max; ++n) {
 			const double k = bessel_zero(m,n)[n-1] / a;
-			out.push_back({m, n, a, k, c*k});
+			out.push_back({mem,m, n, a, k, c*k});
 		}
 	}
 	std::sort(out.begin(), out.end(), [](const CircularMode& p, const CircularMode& q) { return p.w < q.w; });

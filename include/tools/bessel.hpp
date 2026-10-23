@@ -16,28 +16,34 @@ inline double first_kind_bessel(std::size_t m, double x) {
 	if (x == 0.0) return m == 0 ? 1.0 : 0.0;
 	const double ax = std::abs(x);
 
-	std::size_t N = std::static_cast<std::size_t>(x) * m * 40;
-	double Jnext = 0.0;
-	double JN = 1e-20;
-	double Jprev;
-	double Jm;
+	const std::size_t top = std::max<std::size_t>(m, static_cast<std::size_t>(ax));
+    std::size_t N = top + 20 + static_cast<std::size_t>(std::sqrt(40.0 * top)); 
 
+	double Jnext = 0.0;
+	double JN = 1e-30;
+	double Jm = 0.0;
 	double sum = 0.0;
 
 	while (N > 0) {
-		Jprev = (2.0 * N)/x * JN - Jnext;
+		const double Jprev = (2.0 * N)/ax * JN - Jnext;
+		Jnext = JN;
+		JN = Jprev;
 		N -= 1;
-		if (N == m) Jm = Jprev;
-		if (N % 2 == 0 && N != 0) sum += 2.0 * Jprev; 
-		if (N == 0) sum += Jprev;
+
+		if (std::abs(JN) > 1e250) {
+			// Overflow protection
+			JN *= 1e-250; Jnext *= 1e-250; Jm *= 1e-250; sum *= 1e-250;
+		}
+		if (N == m) Jm = JN;
+		if (N % 2 == 0 && N != 0) sum += 2.0 * JN; 
+		if (N == 0) sum += JN;
+		
+		
 	}
 
-	const double val = Jm / sum;
+	double val = Jm / sum;
 	if (x < 0 && (m%2)) val = -val; // J_m(-x) = (-1)^m J_m(x)
 	return val;
-
-
-
 }
 
 // I_n(z) = sum_{k=0, inf} (x/2)^(2k+m) / k!(m+k)!
