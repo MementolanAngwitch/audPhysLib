@@ -7,7 +7,6 @@
 namespace audphys {
 
 using cvec = std::vector<std::complex<double>>;
-auto pi = std::numbers::pi;
 
 cvec dft_helper(const cvec& x, int k, int N);
 cvec dft(const cvec& x);     // reference: direct from the definition, O(N^2)

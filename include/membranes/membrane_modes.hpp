@@ -30,7 +30,7 @@ inline std::complex<double> displacement(const M& md, double x, double z, double
 }
 
 template <MembraneMode M>
-inline double total_displacement(const std::vector<M>& modes, double x, double z, double t) {
+inline std::complex<double> total_displacement(const std::vector<M>& modes, double x, double z, double t) {
 	double out =0.0;
 	for (const M& md : modes) out += displacement(md,x,z,t);
 	return out;

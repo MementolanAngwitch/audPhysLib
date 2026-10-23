@@ -16,7 +16,7 @@ struct AirVolume{
 };
 
 inline double volume(const AirVolume& av, double P) {
-	return std::pow(av.eq_pressure * std::pow(av.volume,av.heat_capacity)/P, -av.heat_capacity);
+	return av.volume * std::pow(av.eq_pressure / P, 1.0 / av.heat_capacity);
 }
 
 inline double pressure(const AirVolume& av, double V) {
