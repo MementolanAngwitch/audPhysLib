@@ -20,6 +20,10 @@ inline double first_kind_bessel(std::size_t m, double x) {
 	}
 	return sum;
 }
+//TODO: Current implementation fails for large x
+inline double modified_first_kind_bessel(std::size_t m, double x) {
+	return 0.0; //TODO: Modified first kind bessel function
+}
 
 inline std::vector<double> bessel_zero(std::size_t m, size_t N) {
 	const double h = 1.0;
