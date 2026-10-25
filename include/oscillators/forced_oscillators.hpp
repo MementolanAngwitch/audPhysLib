@@ -3,7 +3,7 @@
 #include <cmath>
 #include "equation_of_motion.hpp"
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 // Complex velocity amplitude u_hat = F / Zm   [m/s]
 inline std::complex<double> velocity_phasor(const DampedOscillator& o, const Drive& d) {

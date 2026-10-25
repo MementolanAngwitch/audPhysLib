@@ -7,7 +7,7 @@
 #include <numbers>
 #include <vector>
 
-namespace audphys::membrane{
+namespace audphys::membranes {
 
 template <class M>
 concept MembraneMode = requires(const M& md, double x, double z) {

@@ -2,7 +2,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 struct SimpleOscillator { // should probably be a class but whatever
     double m;   // kg

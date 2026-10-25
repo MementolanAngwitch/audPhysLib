@@ -3,7 +3,7 @@
 #include <vector>
 #include "oscillators.hpp"
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 //Linear Combination
 //Same angular frequencies
 // x = A cos(wt+phi)

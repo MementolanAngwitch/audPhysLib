@@ -5,7 +5,7 @@
 #include <cmath>
 #include "strings.hpp"
 
-namespace audphys::string{
+namespace audphys::strings{
 
 // c = sqrt(T/pl)
 inline double wave_speed(const String& s) {

@@ -1,8 +1,9 @@
 #pragma once
 #include <cmath>
 #include <numbers>
-#include "tools/bessel.hpp" //TODO: modified bessel functions of the first kind 
+#include "tools/bessel.hpp" 
 #include "tools/brent_method.hpp"
+
 namespace audphys::plates{
 // Symmetric vibrations of a uniform circular diaphragm
 struct CircularThinPlate{

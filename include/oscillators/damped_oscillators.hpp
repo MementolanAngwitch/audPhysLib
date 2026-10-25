@@ -3,7 +3,7 @@
 #include <cmath>
 #include "equation_of_motion.hpp"
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 inline double relaxation_time(const DampedOscillator& d) {
 	return 1.0 / d.beta;

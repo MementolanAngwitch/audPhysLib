@@ -7,7 +7,7 @@
 #include "tools/brent_method.hpp"
 #include "1d_wave.hpp"
 
-namespace audphys::string{
+namespace audphys::strings{
 
 // ---- Forced, fixed string: resonances, nodes, antinodes ----
 

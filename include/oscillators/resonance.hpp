@@ -13,7 +13,7 @@
 // Q = w0/(2beta)
 // Q = 1/2 w0 t (t = relaxation time)
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 inline double quality_factor(const DampedOscillator& o) {
 	double w0 = nat_angular_freq(o.base);

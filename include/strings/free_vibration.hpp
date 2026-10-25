@@ -3,7 +3,7 @@
 #include <cmath>
 #include "1d_wave.hpp"
 
-namespace audphys::string{
+namespace audphys::strings{
 
 // The shape y0 on [0, L], extended to the whole line by mirror images across each end.
 // Moving 2L along the line multiplies the shape by (left sign)(right sign).

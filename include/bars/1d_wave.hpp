@@ -3,11 +3,12 @@
 #include <numbers>
 #include <complex>
 #include <cmath>
+
 #include "tools/brent_method.hpp"
 #include "tools/composite_simpson.hpp"
 #include "bars.hpp"
 
-namespace audphys::bar{
+namespace audphys::bars{
 
 inline double strain(const Bar& b, double change) {
 	return change/b.length;

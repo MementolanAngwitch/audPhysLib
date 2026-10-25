@@ -2,11 +2,13 @@
 
 #include <numbers>
 #include <cmath>
+
 #include "bars.hpp"
+#include "1d_wave.hpp"
 #include "longitudinal_waves.hpp"
 
 
-namespace audphys::bar{
+namespace audphys::bars{
 
 // For circular cross section
 // stress = shear_mod * radius * (stress_angle / plate_length)

@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace audphys::membrane {
+namespace audphys::membranes {
 
 struct Membrane {
 	double ps;		// surface density

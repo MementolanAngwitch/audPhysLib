@@ -7,11 +7,11 @@
 #include <complex>
 #include <cmath>
 
-#include "wave1d.hpp"
+#include "1d_wave.hpp"
 #include "tools/bracket_finder.hpp"
 #include "tools/brent_method.hpp"
 
-namespace audphys::bar{
+namespace audphys::bars{
 
 // Bending moment -YSkappa^2 / R
 // kappa^2 = 1/S int(r^2 dS)

@@ -2,7 +2,7 @@
 #include <cmath>
 #include "equation_of_motion.hpp"
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 // x = x0 cos(omega * t) + (u/omega) sin (omega * t)
 inline double position(const SimpleOscillator& o, const InitialConditions& ic, double t) {

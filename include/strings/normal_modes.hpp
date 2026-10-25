@@ -5,7 +5,7 @@
 #include <cmath>
 #include "1d_wave.hpp"
 
-namespace audphys::string{
+namespace audphys::strings{
 
 // ==== Normal modes of the fixed, fixed string ==================================
 

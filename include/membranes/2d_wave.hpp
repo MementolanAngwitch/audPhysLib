@@ -3,7 +3,7 @@
 #include <cmath>
 #include "membranes.hpp"
 
-namespace audphys::membrane {
+namespace audphys::membranes {
 //c^2 = T/ps
 inline double stretched_phase_speed(const Membrane& m) {
 	return std::sqrt(m.tension/m.ps);

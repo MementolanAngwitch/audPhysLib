@@ -6,9 +6,11 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+
 #include "tools/brent_method.hpp"
-#include "wave1d.hpp"
-namespace audphys::bar{
+#include "1d_wave.hpp"
+#include "bars/bar.hpp"
+namespace audphys::bars{
 
 
 //Mass loaded bar with mass at x=L and free at x=0
@@ -44,11 +46,11 @@ struct ForcedBar{
 //mech imp  of support at x=0 is zm0 the force acting on this support due to the bar is 
 // f0 = -Zm0 u(0,t) using convention of ending at the right, starting at the left
 
-inline std::complex<double> forceLeft(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
+inline std::complex<double> force_left(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
 	return -1.0 * impedance(b.left,w) * velocity(amps,b.bar,w,0.0,t);
 }
 
-inline std::complex<double> forceRight(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
+inline std::complex<double> force_right(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
 	return impedance(b.right,w) * velocity(amps,b.bar,w,b.bar.length,t);
 }
 

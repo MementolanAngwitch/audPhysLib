@@ -4,10 +4,10 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#include "2dwave.hpp"
+#include "2d_wave.hpp"
 #include "membrane_modes.hpp"
 
-namespace audphys::membrane {
+namespace audphys::membranes {
 
 struct RectangularMode {
 	Membrane membrane;

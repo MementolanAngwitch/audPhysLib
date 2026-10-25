@@ -6,7 +6,7 @@
 #include <complex>
 #include "oscillators.hpp"
 
-namespace audphys::oscillator {
+namespace audphys::oscillators {
 
 // omega = 2pi * f
 inline double nat_angular_freq(const SimpleOscillator& o) {

@@ -5,7 +5,7 @@
 #include <complex>
 #include <vector>
 
-namespace audphys::bar{
+namespace audphys::bars{
 
 struct CrossSection{
 	double area;

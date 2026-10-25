@@ -5,11 +5,12 @@
 #include <numbers>
 #include <stdexcept>
 #include <vector>
-#include "2dwave.hpp"
+
+#include "2d_wave.hpp"
 #include "membrane_modes.hpp"
 #include "tools/bessel.hpp"
 
-namespace audphys::membrane{
+namespace audphys::membranes{
 
 struct CircularMode {
 	Membrane membrane;

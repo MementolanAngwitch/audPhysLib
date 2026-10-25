@@ -5,7 +5,7 @@
 #include <complex>
 #include <vector>
 
-namespace audphys::string{
+namespace audphys::strings{
 
 struct String {
 	double length;		// L     [m]
