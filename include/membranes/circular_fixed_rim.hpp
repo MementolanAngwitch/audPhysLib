@@ -83,7 +83,7 @@ inline double average_displacement_amplitude(const CircularMode& md) {
 	return md.A * 2.0 * first_kind_bessel(1, ka) / ka;
 }
 
-inline void amplitude(std::vector<CircularMode>& mds, double I, double r0, double theta0) {
+inline void strike(std::vector<CircularMode>& mds, double I, double r0, double theta0) {
 	// check that r0,theta0 is on the membrane
 	for (CircularMode& md : mds) {
 		const double V = I / md.membrane.ps;
@@ -92,11 +92,12 @@ inline void amplitude(std::vector<CircularMode>& mds, double I, double r0, doubl
 
 		md.A = V / (std::numbers::pi * md.a * md.a) * (epsilon / md.w) * 
 		(first_kind_bessel(md.m, md.k*r0) / (first_kind_bessel(md.m+1,md.k*md.a)*first_kind_bessel(md.m+1,md.k*md.a)));
+		md.gamma = -static_cast<double>(md.m) * theta0;
 	}
 }
 
 inline double mode_displacement(const CircularMode& md, double r, double theta, double t) {
-	return md.A * first_kind_bessel(md.m, md.k*r) * std::cos(md.m * theta) * std::sin(md.w * t);
+	return md.A * std::exp(-md.beta * t) * mode_shape_polar(md,r,theta) * std::sin(md.w * t + md.phi);
 }
 
 inline double total_mode_displacement(const std::vector<CircularMode>& mds, double r, double theta, double t) {

@@ -88,7 +88,7 @@ struct DampedMotion {
     AmplitudePhase ap;
 
     // From initial conditions: the conversion uses this oscillator, so they always match
-    DampedMotion(DampedOscillator o, InitialConditions ic) : osc(o), ap(to_amp_phase(o.base, ic)) {}
+    DampedMotion(DampedOscillator o, InitialConditions ic) : osc(o), ap(to_amp_phase(o, ic)) {}
 
     DampedMotion(DampedOscillator o, AmplitudePhase a) : osc(o), ap(a) {
         if (!(std::isfinite(ap.A) && ap.A >= 0)) throw std::invalid_argument("amplitude must be non-negative");

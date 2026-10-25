@@ -41,6 +41,10 @@ inline double rectangular_mode_shape(const RectangularMode& md, double x, double
 	return std::sin(md.kx * x) * std::sin(md.kz * z);
 }
 
+inline double mode_shape(const RectangularMode& md, double x, double z) {
+	return std::sin(md.kx * x) * std::sin(md.kz * z);
+}
+
 inline std::vector<double> nodal_lines_x(const RectangularMode& md) {
 	std::vector<double> out;
 	for (int q = 1; q < md.n; ++q) out.push_back(q * md.Lx / md.n);

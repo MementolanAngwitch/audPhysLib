@@ -51,7 +51,7 @@ namespace audphys{
 	*/
 
 template<class F>
-double brent(F f, double x0, double x1, double TOL = 1e-15) {
+double brent(F f, double x0, double x1, double TOL = 1e-15, std::size_t N = 1000) {
 	const double eps = std::numeric_limits<double>::epsilon();
 	
 	double fx0 = f(x0), fx1 = f(x1);
@@ -67,7 +67,7 @@ double brent(F f, double x0, double x1, double TOL = 1e-15) {
 	//Iteration checking
 	double d = other -best; //last step
 	double e = d; //step before last
-	for (int iter = 0; iter < 200; ++iter) {
+	for (int iter = 0; iter < N; ++iter) {
 		const double step = 0.5 * (other - best);
 		const double delta = 2.0 * eps * std::abs(best) + 0.5 * TOL;
 		//step 1
@@ -120,6 +120,9 @@ double brent(F f, double x0, double x1, double TOL = 1e-15) {
 			other = temp; fother = ftemp;
 			prev = temp; fprev = ftemp;
 		}
+	}
+	if (N == N -1 ) {
+		throw std::runtime_error("Brent Method - Root Not Found");
 	}
 	return best;
 }
