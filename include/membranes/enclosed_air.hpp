@@ -3,14 +3,14 @@
 #include <cmath>
 #include <numbers>
 
-#include "2dwave.hpp"
-#include "membranes.hpp"
-#include "membrane_modes.hpp"
-#include "circular_fixed_rim.hpp"
+#include "membranes/2d_wave.hpp"
+#include "membranes/membranes.hpp"
+#include "membranes/membrane_modes.hpp"
+#include "membranes/circular_fixed_rim.hpp"
 #include "tools/bessel.hpp"
 #include "tools/brent_method.hpp"
 
-namespace audphys::membrane{
+namespace audphys::membranes{
 
 struct AirVolume{
 	double eq_pressure;   // P0

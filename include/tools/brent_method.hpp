@@ -121,9 +121,7 @@ double brent(F f, double x0, double x1, double TOL = 1e-15, std::size_t N = 1000
 			prev = temp; fprev = ftemp;
 		}
 	}
-	if (iter == N -1 ) {
-		throw std::runtime_error("Brent Method - Root Not Found");
-	}
+	throw std::runtime_error("Brent method did not converge");
 	return best;
 }
 

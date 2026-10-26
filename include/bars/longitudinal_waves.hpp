@@ -9,7 +9,7 @@
 
 #include "tools/brent_method.hpp"
 #include "1d_wave.hpp"
-#include "bars/bar.hpp"
+#include "bars/bars.hpp"
 namespace audphys::bars{
 
 

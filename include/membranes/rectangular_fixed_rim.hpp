@@ -47,13 +47,13 @@ inline double mode_shape(const RectangularMode& md, double x, double z) {
 
 inline std::vector<double> nodal_lines_x(const RectangularMode& md) {
 	std::vector<double> out;
-	for (int q = 1; q < md.n; ++q) out.push_back(q * md.Lx / md.n);
+	for (std::size_t q = 1; q < md.n; ++q) out.push_back(q * md.Lx / md.n);
 	return out;
 }
  
 inline std::vector<double> nodal_lines_z(const RectangularMode& md) {
 	std::vector<double> out;
-	for (int p = 1; p < md.m; ++p) out.push_back(p * md.Lz / md.m);
+	for (std::size_t p = 1; p < md.m; ++p) out.push_back(p * md.Lz / md.m);
 	return out;
 }
 

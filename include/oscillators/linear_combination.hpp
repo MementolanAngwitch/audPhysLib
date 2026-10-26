@@ -31,15 +31,15 @@ inline AmplitudePhase combined_amp_phase(const std::vector<AmplitudePhase>& part
 // tan(phi) = (A1 * sin(phi_1) + A2 * sin(phi_2 + delta*w*t))/(A1 * cos(phi_1) + A2 cos(phi_2 + delta*w*t))
 
 inline AmplitudePhase combine_amp_phase(const AmplitudePhase& lhs, const Drive& lhd, const AmplitudePhase& rhs, const Drive& rhd, double t) {
-	double w1 = lhd.w;
+	//double w1 = lhd.w;
 	double deltaw = std::abs(lhd.w - rhd.w);
-	double w2 = w1 + deltaw;
+	//double w2 = w1 + deltaw;
 	double A1 = lhs.A;
 	double A2 = rhs.A;
 	double phi1 = lhs.phi;
 	double phi2 = rhs.phi;
 
-	double combA = std::sqrt(A1*A1 + A2*2 + 2 * A1 * A2 * std::cos(phi1 - phi2 - deltaw * t));
+	double combA = std::sqrt(A1*A1 + A2*A2 + 2 * A1 * A2 * std::cos(phi1 - phi2 - deltaw * t));
 	double phi = atan2( (A1*std::sin(phi1) + A2 * std::sin(phi2 + deltaw*t)),(A1*std::cos(phi1) + A2 * std::cos(phi2 + deltaw*t)) );
 	return {combA, phi};
 }
