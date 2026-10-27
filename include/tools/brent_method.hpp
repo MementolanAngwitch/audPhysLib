@@ -67,7 +67,7 @@ double brent(F f, double x0, double x1, double TOL = 1e-15, std::size_t N = 1000
 	//Iteration checking
 	double d = other -best; //last step
 	double e = d; //step before last
-	for (int iter = 0; iter < N; ++iter) {
+	for (std::size_t iter = 0; iter < N; ++iter) {
 		const double step = 0.5 * (other - best);
 		const double delta = 2.0 * eps * std::abs(best) + 0.5 * TOL;
 		//step 1

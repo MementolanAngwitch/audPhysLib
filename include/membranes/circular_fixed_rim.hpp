@@ -30,7 +30,7 @@ inline CircularMode circular_mode(const Membrane& mem, double a, std::size_t m, 
 	return{mem,m,n,a,k,c*k};
 }
 
-inline void set_mode(CircularMode& md, double beta) {
+inline void set_beta(CircularMode& md, double beta) {
 	md.beta = beta;
 }
 
@@ -95,15 +95,15 @@ inline void strike(std::vector<CircularMode>& mds, double I, double r0, double t
 		double epsilon = 2.0;
 		if (md.m==0) epsilon = 1.0;
 
-		md.A = V / (std::numbers::pi * md.a * md.a) * (epsilon / md.w) * 
+		md.A = V / (std::numbers::pi * md.a * md.a) * (epsilon / damped_angular_frequency(md)) * 
 		(first_kind_bessel(md.m, md.k*r0) / (first_kind_bessel(md.m+1,md.k*md.a)*first_kind_bessel(md.m+1,md.k*md.a)));
 		md.gamma = -static_cast<double>(md.m) * theta0;
-		md.phi = std::numbers::pi / 2.0;
+		md.phi = -std::numbers::pi / 2.0;
 	}
 }
 
 inline double mode_displacement(const CircularMode& md, double r, double theta, double t) {
-	return md.A * std::exp(-md.beta * t) * mode_shape_polar(md,r,theta) * std::sin(damped_angular_frequency(md) * t + md.phi);
+	return md.A * std::exp(-md.beta * t) * mode_shape_polar(md,r,theta) * std::cos(damped_angular_frequency(md) * t + md.phi);
 }
 
 inline double total_mode_displacement(const std::vector<CircularMode>& mds, double r, double theta, double t) {
