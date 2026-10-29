@@ -13,14 +13,14 @@ namespace audphys::strings{
 
 // Resonance (Z_m0 = 0): f = (2n - 1) c / (4L), n = 1, 2, ...
 
-inline double forced_fixed_res_freq(const String& s, std::size_t n) {
-	return ((2.0 * n - 1) * wave_speed(s)) / (4.0 * s.length);
+inline double forced_fixed_resonant_frequency(const String& s, std::size_t n) {
+	return ((2.0 * n - 1) * wave_speed(s)) / (4.0 * s.length) * 2.0 * std::numbers::pi;
 }
  
 // Anti-resonance (|Z_m0| infinite): f = n c / (2L), n = 1, 2, ...
 
-inline double forced_fixed_anti_res_freq (const String& s, std::size_t n) {
-	return (n*wave_speed(s)) / (2.0 * s.length);
+inline double forced_fixed_anti_resonant_frequency (const String& s, std::size_t n) {
+	return (n*wave_speed(s)) / (2.0 * s.length) * 2.0 * std::numbers::pi;
 }
 
 // ---- Forced, mass-loaded string: resonances ----
@@ -29,12 +29,13 @@ inline double forced_fixed_anti_res_freq (const String& s, std::size_t n) {
 // written as sin(kL) + (m/m_s) kL cos(kL) = 0 to avoid tan's poles. The n-th root lies between
 // kL = (n - 1/2) pi (an infinitely heavy mass, a fixed end) and kL = n pi (no mass, a free end).
 // f_res = kL * c / (2pi L)
+// w_res = kL * c/L
 
-inline double mass_loaded_resonance_freq(const String& s, double m, double n) {
+inline double mass_loaded_resonance_frequency(const String& s, double m, double n) {
 	const double pi = std::numbers::pi, mu = m / string_mass(s);
 	auto g = [mu](double x) { return std::sin(x) + mu * x * std::cos(x); };
 	const double kL = brent(g, (n-0.5) * pi, n * pi);
-	return kL * wave_speed(s) / (2*pi*s.length);
+	return kL * wave_speed(s) / (s.length);
 } 
 
 // ==== Forced vibration of an infinite string ==================================

@@ -149,7 +149,7 @@ inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, i
 
 // Frequency and decay rate of a mode, from its complex kL:  w = c kL / L
 inline double mode_frequency(const Bar& b, std::complex<double> kL) {
-	return longitudinal_phase_speed(b) * kL.real() / (2.0 * std::numbers::pi * b.length);
+	return longitudinal_phase_speed(b) * kL.real() /   b.length;
 }
 
 inline double mode_decay_rate(const Bar& b, std::complex<double> kL) {

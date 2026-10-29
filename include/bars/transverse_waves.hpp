@@ -76,7 +76,7 @@ enum class Ends { ClampedClamped, FreeFree, ClampedFree }; //TODO: SimplySupport
 // sign = +1: clamped-clamped or free-free,  cos(gL)cosh(gL) =  1
 // sign = -1: clamped-free,                  cos(gL)cosh(gL) = -1
 
-inline std::vector<double> bending_nat_freq_helper(const Bar& b, int n, int sign) {
+inline std::vector<double> bending_natural_frequency_helper(const Bar& b, int n, int sign) {
 	auto f = [sign](double x){ return std::cos(x) - sign/std::cosh(x);};
 
 	const double kappa = b.crossSection.kappa;
@@ -91,17 +91,17 @@ inline std::vector<double> bending_nat_freq_helper(const Bar& b, int n, int sign
 		const int k = (sign > 0) ? i+1 : i;
 		const double x = brent(f, (k-1)*pi, k*pi);
 		const double g = x/L;
-		out.push_back((kappa * c * g * g)/(2*pi));
+		out.push_back(kappa * c * g * g);
 	}
 	return out;
 } 
 
-inline std::vector<double> symmetric_bending_nat_freq(const Bar& b, int n) { //TODO: Simply Supported Bars
-	return bending_nat_freq_helper(b,n,1);
+inline std::vector<double> symmetric_bending_natural_frequency(const Bar& b, int n) { //TODO: Simply Supported Bars
+	return bending_natural_frequency_helper(b,n,1);
 }
 
-inline std::vector<double> asymmetric_bending_nat_freq(const Bar& b, int n) {
-	return bending_nat_freq_helper(b,n,-1);
+inline std::vector<double> asymmetric_bending_natural_frequency(const Bar& b, int n) {
+	return bending_natural_frequency_helper(b,n,-1);
 }
 
 // Mode shapes 
