@@ -3,6 +3,7 @@
 #include <numbers>
 #include <complex>
 #include <cmath>
+#include <stdexcept>
 
 #include "tools/brent_method.hpp"
 #include "tools/composite_simpson.hpp"
@@ -65,22 +66,23 @@ inline CrossSection general_cross_section(W width, double y_min, double y_max, i
 	return { area, std::sqrt(I / area) };
 }
 
-inline std::complex<double> impedance(const Load& L, std::complex<double> w) {
+inline std::complex<double> impedance(const End& L, std::complex<double> w) {
+	if (L.fixed) throw std::domain_error("impedance: a fixed end has infinite impedance");
 	const std::complex<double> j{ 0.0,1.0 };
 	std::complex<double> Z = L.R + j * w * L.m;
 	if (L.s >0) Z += L.s / (j*w);
 	return Z;
 }
 
-inline Termination fixed_end() {return {true, Load{}}; }
-inline Termination free_end() {return {false, Load{}}; }
-inline Termination loaded_end(const Load& L) {return {false, L};}
+inline End fixed_end() {return {true}; }
+inline End free_end() {return {}; }
+inline End loaded_end(double R, double m, double s = 0.0) {return {false, R, m, s};}
 
 // Reflection coefficient of an end: R = (1 - z) / (1 + z),  z = Z / (rho c S).
 // Finite for every end: free R = +1, fixed R = -1, matched resistance (z = 1) R = 0.
-inline std::complex<double> reflection(const Termination& e, double z0, std::complex<double> w) {
+inline std::complex<double> reflection(const End& e, double z0, std::complex<double> w) {
 	if (e.fixed) return -1.0;
-	const std::complex<double> z= impedance(e.load,w) / z0;
+	const std::complex<double> z= impedance(e,w) / z0;
 	return (1.0-z) / (1.0+z);
 }
 

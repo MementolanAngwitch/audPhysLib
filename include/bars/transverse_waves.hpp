@@ -60,14 +60,6 @@ inline std::array<int,2> vanishing_orders(BendingEnd e) {
 	return { 0,0 };
 }
 
-struct BentBar {
-	BendingEnd left;
-	BendingEnd right;
-	Bar bar;
-};
-
-enum class Ends { ClampedClamped, FreeFree, ClampedFree }; //TODO: SimplySupported
-
 // Natural frequencies 
 
 // g = w/v,  w = gv, f = 1/2pi * gv * n
@@ -96,41 +88,40 @@ inline std::vector<double> bending_natural_frequency_helper(const Bar& b, int n,
 	return out;
 } 
 
-inline std::vector<double> symmetric_bending_natural_frequency(const Bar& b, int n) { //TODO: Simply Supported Bars
-	return bending_natural_frequency_helper(b,n,1);
-}
-
-inline std::vector<double> asymmetric_bending_natural_frequency(const Bar& b, int n) {
-	return bending_natural_frequency_helper(b,n,-1);
+// Equal ends (clamped-clamped, free-free) share one equation; clamped-free (either way round) the other.
+inline std::vector<double> bending_natural_frequency(const Bar& b, BendingEnd left, BendingEnd right, int n) { //TODO: Simply Supported Bars
+	if (left == BendingEnd::SimplySupported || right == BendingEnd::SimplySupported)
+		throw std::invalid_argument("bending_natural_frequency: simply supported ends are not implemented yet");
+	return bending_natural_frequency_helper(b, n, (left == right) ? 1 : -1);
 }
 
 // Mode shapes 
 
 // Mode shape of a bending bar.
-inline double mode_shape(Ends e, double g, double L, double x) {
+inline double mode_shape(BendingEnd left, BendingEnd right, double g, double L, double x) {
+    if (left == BendingEnd::SimplySupported || right == BendingEnd::SimplySupported)
+        throw std::invalid_argument("mode_shape: simply supported ends are not implemented yet");
+    if (left == BendingEnd::Free && right == BendingEnd::Clamped)
+        return mode_shape(right, left, g, L, L - x); // mirror image of clamped-free
     const double a = g * L, u = g * x;
-    switch (e) {
-        case Ends::ClampedFree: {
-            double s = (std::cosh(a) + std::cos(a)) / (std::sinh(a) + std::sin(a));
-            return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
-        }
-        case Ends::ClampedClamped: {
-            double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
-            return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
-        }
-        case Ends::FreeFree: {
-            double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
-            return (std::cosh(u) + std::cos(u)) - s * (std::sinh(u) + std::sin(u));
-        }
+    if (left == BendingEnd::Clamped && right == BendingEnd::Free) {
+        double s = (std::cosh(a) + std::cos(a)) / (std::sinh(a) + std::sin(a));
+        return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
     }
-    return 0.0;
+    if (left == BendingEnd::Clamped) { // clamped-clamped
+        double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
+        return (std::cosh(u) - std::cos(u)) - s * (std::sinh(u) - std::sin(u));
+    }
+    // free-free
+    double s = (std::cosh(a) - std::cos(a)) / (std::sinh(a) - std::sin(a));
+    return (std::cosh(u) + std::cos(u)) - s * (std::sinh(u) + std::sin(u));
 }
 
 
 //interior nodes only, free ends are never nodes, clamped ends always are, take freq and find zeros
-inline std::vector<double> node_positions(Ends e, double g, double L) { //TODO: FreelySupported
+inline std::vector<double> node_positions(BendingEnd left, BendingEnd right, double g, double L) { //TODO: FreelySupported
 	
-	auto y = [&](double x){ return mode_shape(e,g,L,x); };
+	auto y = [&](double x){ return mode_shape(left,right,g,L,x); };
 	const double eps = 1e-6 * L;
 	std::vector<double> nodes;
 

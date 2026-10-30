@@ -13,53 +13,25 @@
 namespace audphys::bars{
 
 
-//Mass loaded bar with mass at x=L and free at x=0
-
-struct MassLoadedBar {
-	Bar bar;
-	double mass;
-};
-
-struct LoadedBar{
-	Bar bar;
-	Load left;
-	Load right;
-};
-
-struct TerminatedBar {
-	Bar bar;
-	Termination left;
-	Termination right;
-};
-
-// Forced bar, 
-
-struct ForcedBar{
-	Bar bar;
-	double force;
-	Load left;
-	Load right;
-};
-
 //Freely vibrating bar with general B.C
 
 //mech imp  of support at x=0 is zm0 the force acting on this support due to the bar is 
 // f0 = -Zm0 u(0,t) using convention of ending at the right, starting at the left
 
-inline std::complex<double> force_left(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
-	return -1.0 * impedance(b.left,w) * velocity(amps,b.bar,w,0.0,t);
+inline std::complex<double> force_left(const WaveAmplitude& amps, const Bar& b, const End& left, double w, double t) {
+	return -1.0 * impedance(left,w) * velocity(amps,b,w,0.0,t);
 }
 
-inline std::complex<double> force_right(const WaveAmplitude& amps, const LoadedBar& b, double w, double t) {
-	return impedance(b.right,w) * velocity(amps,b.bar,w,b.bar.length,t);
+inline std::complex<double> force_right(const WaveAmplitude& amps, const Bar& b, const End& right, double w, double t) {
+	return impedance(right,w) * velocity(amps,b,w,b.length,t);
 }
 
 // B = (1+(zm0/plc))/(1-(zm0/plc)) A
 // tankL = j ((zm0/plc) + (zm/plc))/(1+(zm0/plc)(zm/plc))
 
-inline std::complex<double> reflection_ratio(const LoadedBar& b, std::complex<double> w) {
-	std::complex<double> zm0 = impedance(b.left,w);
-	std::complex<double> plc = b.bar.density * b.bar.crossSection.area * longitudinal_phase_speed(b.bar);
+inline std::complex<double> reflection_ratio(const Bar& b, const End& left, std::complex<double> w) {
+	std::complex<double> zm0 = impedance(left,w);
+	std::complex<double> plc = b.density * b.crossSection.area * longitudinal_phase_speed(b);
 
 	return (1.0+zm0/plc) / (1.0-zm0/plc);
 }
@@ -108,16 +80,16 @@ inline double mass_loaded_kL(const Bar& b, double m, int n) {
 // kL is complex when a load has resistance: Re = frequency, Im = decay. Because the impedances depend
 // on kL itself, solve by fixed-point iteration: kL <- arctan(rhs(kL)) + n pi, until it stops changing.
 // Mode n (n >= 1) has Re(kL) between (n - 1/2) pi and (n + 1/2) pi.
-inline std::complex<double> mode_kl(const TerminatedBar& b, std::size_t n) {
+inline std::complex<double> mode_kl(const Bar& b, const End& left, const End& right, std::size_t n) {
 	const std::complex<double> j{ 0.0,1.0 };
 	const double pi = std::numbers::pi;
-	const double c = longitudinal_phase_speed(b.bar);
-	const double L = b.bar.length;
-	const double plc = b.bar.density * b.bar.crossSection.area * c;
+	const double c = longitudinal_phase_speed(b);
+	const double L = b.length;
+	const double plc = b.density * b.crossSection.area * c;
 
 	auto step = [&](std::complex<double> kl) {
 		const std::complex<double> w = c * kl / L;
-		const std::complex<double> RR = reflection(b.left, plc, w) * reflection(b.right, plc, w);
+		const std::complex<double> RR = reflection(left, plc, w) * reflection(right, plc, w);
 		if (std::abs(RR) == 0.0) throw std::domain_error("mode_kl an end absorbs every wave, no modes exist");
 		return -0.5 * j * std::log(RR) + n * pi;
 	};
@@ -131,11 +103,11 @@ inline std::complex<double> mode_kl(const TerminatedBar& b, std::size_t n) {
 }
 
 // The lowest N modes with postive frequency, sorted. 
-inline std::vector<std::complex<double>> lowest_modes(const TerminatedBar& tb, int N) {
+inline std::vector<std::complex<double>> lowest_modes(const Bar& b, const End& left, const End& right, int N) {
 	std::vector<std::complex<double>> out;
 	for (int n = 0; static_cast<int>(out.size()) < N; ++n) {
 		std::complex<double> kl;
-		try { kl = mode_kl(tb,n); }
+		try { kl = mode_kl(b,left,right,n); }
 		catch (const std::runtime_error&) {
 			if (n ==0) continue;
 			throw;
@@ -221,14 +193,15 @@ inline std::vector<double> mass_loaded_nodes(const Bar& b, double m, int n) {
 
 // Forced bar 
 
-inline std::complex<double> complex_force(const ForcedBar& b, double w, double t) {
-	return std::polar(b.force, w* t);
+inline std::complex<double> complex_force(double force, double w, double t) {
+	return std::polar(force, w* t);
 }
 
-inline std::complex<double> forced_input_imp(const ForcedBar& b,double w) {
-	double plc = b.bar.crossSection.area * b.bar.density * longitudinal_phase_speed(b.bar);
-	double kl = wave_number(b.bar,w) * b.bar.length;
-	std::complex<double> zm = impedance(b.right, w);
+// Input impedance at x = 0 of a bar driven there, with the given end at x = L
+inline std::complex<double> forced_input_imp(const Bar& b, const End& right, double w) {
+	double plc = b.crossSection.area * b.density * longitudinal_phase_speed(b);
+	double kl = wave_number(b,w) * b.length;
+	std::complex<double> zm = impedance(right, w);
 	std::complex<double> j = { 0.0,1.0 };
 
 	return plc * ((zm / plc) + j * std::tan(kl)) / (1.0 + (zm/plc)*j*std::tan(kl));
