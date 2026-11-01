@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 #include <cmath>
 #include <numbers>
 #include "tools/bessel.hpp" 
@@ -68,4 +69,20 @@ inline double displacement(const PlateMode& p, std::size_t n, double r, double t
 inline double displacement(const CircularThinPlate& p, std::size_t n, double r, double t) {
 	return displacement(make_mode(p,n), n, r, t);
 }
+
+// Pitch-to-parameter helpers for mode n at angular frequency w [rad/s].
+// Plate frequencies scale as d / a^2 (w = kappa c (ga_n / a)^2, kappa = d / sqrt(12)).
+
+inline double radius_for_ang_freq(const CircularThinPlate& p, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("radius_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("radius_for_ang_freq: mode number starts at 1");
+	return p.a * std::sqrt(natural_angular_frequency(p, n) / w);
+}
+
+inline double thickness_for_ang_freq(const CircularThinPlate& p, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("thickness_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("thickness_for_ang_freq: mode number starts at 1");
+	return p.d * w / natural_angular_frequency(p, n);
+}
+
 }

@@ -114,4 +114,20 @@ inline double total_mode_displacement(const std::vector<CircularMode>& mds, doub
 	return sum;
 }
 
+// Pitch-to-parameter helpers for mode (m, n) at angular frequency w [rad/s].
+// From w_mn = c j_mn / a,  c = sqrt(T / rho_s),  j_mn = n-th zero of J_m.
+
+inline double circular_tension_for_ang_freq(double ps, double a, double w, std::size_t m, std::size_t n) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("circular_tension_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("circular_tension_for_ang_freq: mode number starts at 1");
+	const double c = w * a / bessel_zero(m, n)[n-1];
+	return ps * c * c;
+}
+
+inline double circular_radius_for_ang_freq(const Membrane& mem, double w, std::size_t m, std::size_t n) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("circular_radius_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("circular_radius_for_ang_freq: mode number starts at 1");
+	return stretched_phase_speed(mem) * bessel_zero(m, n)[n-1] / w;
+}
+
 }

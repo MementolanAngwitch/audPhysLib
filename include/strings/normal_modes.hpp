@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <numbers>
 #include <vector>
 #include <cmath>
@@ -93,6 +94,22 @@ inline double slope(const NormalModes& nm, double x, double t) {
 		d += std::exp(-m.beta * t) * (m.A * std::cos(w * t) + m.B * std::sin(w * t)) * k * std::cos(k * x);
 	}
 	return d;
+}
+
+// Pitch-to-parameter helpers: the value that puts mode n at angular frequency w [rad/s].
+// From w_n = n pi c / L,  c = sqrt(T / rho_L).
+
+inline double tension_for_ang_freq(double L, double lin_density, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("tension_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("tension_for_ang_freq: mode number starts at 1");
+	const double c = w * L / (static_cast<double>(n) * std::numbers::pi);
+	return lin_density * c * c;
+}
+
+inline double length_for_ang_freq(const String& s, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("length_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("length_for_ang_freq: mode number starts at 1");
+	return static_cast<double>(n) * std::numbers::pi * wave_speed(s) / w;
 }
 
 }

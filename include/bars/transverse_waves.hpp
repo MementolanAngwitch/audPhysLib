@@ -131,4 +131,14 @@ inline std::vector<double> node_positions(BendingEnd left, BendingEnd right, dou
 	return nodes;
 }
 
+// Pitch-to-parameter helper: bar length that puts bending mode n at angular frequency w [rad/s].
+// Bending frequencies scale as 1/L^2 (w = kappa c g^2, g = x_n / L), so L = L0 sqrt(w0 / w).
+
+inline double length_for_ang_freq(const Bar& b, BendingEnd left, BendingEnd right, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("length_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("length_for_ang_freq: mode number starts at 1");
+	const double w0 = bending_natural_frequency(b, left, right, static_cast<int>(n))[n-1];
+	return b.length * std::sqrt(w0 / w);
+}
+
 }//audphys

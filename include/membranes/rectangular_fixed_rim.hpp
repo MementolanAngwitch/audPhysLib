@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <numbers>
 #include <vector>
 #include <algorithm>
@@ -79,6 +80,17 @@ inline double total_mode_displacement(const std::vector<RectangularMode>& mds, d
 		sum += mode_displacement(m, x,z,t);
 	}
 	return sum;
+}
+
+// Pitch-to-parameter helper for mode (n, m) at angular frequency w [rad/s].
+// From w_nm = c pi sqrt((n/Lx)^2 + (m/Lz)^2),  c = sqrt(T / rho_s).
+
+inline double rectangular_tension_for_ang_freq(double ps, double Lx, double Lz, double w, std::size_t n, std::size_t m) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("rectangular_tension_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("rectangular_tension_for_ang_freq: mode number starts at 1");
+	if (m < 1) throw std::invalid_argument("rectangular_tension_for_ang_freq: mode number starts at 1");
+	const double c = w / (std::numbers::pi * std::hypot(static_cast<double>(n) / Lx, static_cast<double>(m) / Lz));
+	return ps * c * c;
 }
 
 }

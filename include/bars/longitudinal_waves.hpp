@@ -209,4 +209,19 @@ inline std::complex<double> forced_input_imp(const Bar& b, const End& right, dou
 // Using scaled mech imp Zm/plc = R/plc + jX/plc = r+jx
 // xtan^2 (kL) + (r^2 + x^2 -1) tan(kL) - x = 0
 
+// Pitch-to-parameter helper: bar length that puts mode n at angular frequency w [rad/s].
+// Only for unloaded ends, where kL does not depend on L: fixed-fixed or free-free kL = n pi,
+// fixed-free kL = (n - 1/2) pi.  L = c kL / w.
+
+inline double length_for_ang_freq(const Bar& b, const End& left, const End& right, double w, std::size_t n = 1) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("length_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("length_for_ang_freq: mode number starts at 1");
+	auto unloaded = [](const End& e) { return e.fixed || (e.R == 0.0 && e.m == 0.0 && e.s == 0.0); };
+	if (!unloaded(left) || !unloaded(right))
+		throw std::invalid_argument("length_for_ang_freq: loaded ends make kL depend on L; not supported");
+	const double kL = (left.fixed == right.fixed) ? static_cast<double>(n) * std::numbers::pi
+	                                              : (static_cast<double>(n) - 0.5) * std::numbers::pi;
+	return longitudinal_phase_speed(b) * kL / w;
+}
+
 }

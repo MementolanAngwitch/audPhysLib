@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <cmath>
 #include <numbers>
 
@@ -54,6 +55,24 @@ inline CircularMode air_loaded_mode(const AirVolume& av){
 	md.k = ka_solver(av) / md.a;
 	md.w = stretched_phase_speed(md.membrane) * md.k;
 	return md;
+}
+
+// Tension that puts the air-loaded (0,1) mode at angular frequency w [rad/s].
+// The air's stiffness depends on tension, so there is no formula: solve w(T) = w numerically.
+// Uses the radius, surface density and air from av; the tension stored in av is ignored.
+
+inline double tension_for_ang_freq(const AirVolume& av, double w) {
+	const std::size_t n = 1;
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("tension_for_ang_freq: angular frequency must be positive and finite");
+	if (n < 1) throw std::invalid_argument("tension_for_ang_freq: mode number starts at 1");
+	auto err = [&](double T) {
+		AirVolume trial = av;
+		trial.mode.membrane.tension = T;
+		return air_loaded_mode(trial).w - w;
+	};
+	double lo = 1e-6, hi = 1.0;          // w rises with T, and tends to 0 as T does
+	while (err(hi) < 0.0) hi *= 2.0;
+	return brent(err, lo, hi);
 }
 
 }
