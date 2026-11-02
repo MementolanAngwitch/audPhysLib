@@ -85,4 +85,14 @@ inline double thickness_for_ang_freq(const CircularThinPlate& p, double w, std::
 	return p.d * w / natural_angular_frequency(p, n);
 }
 
+inline void strike(std::vector<PlateMode>& mds, double I, double r0, const CircularThinPlate& p) {
+	if (r0 < 0.0 || r0 > p.a) throw std::invalid_argument("strike: point must lie on the plate (0 <= r0 <= a)");
+	for (PlateMode& md : mds) {
+		auto shape = [&](double r) { return first_kind_bessel(0, md.g * r) + md.ratio * modified_first_kind_bessel(0, md.g * r); };
+		const double norm = simpson([&](double r) { return shape(r) * shape(r) * 2.0 * std::numbers::pi * r; }, 0.0, md.a, 800);
+		md.A = I / (p.p * p.d) * shape(r0) / (md.w * norm);
+		md.phi = -std::numbers::pi / 2.0;
+	}
+}
+
 }
