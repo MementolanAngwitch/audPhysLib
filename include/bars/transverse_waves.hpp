@@ -141,4 +141,13 @@ inline double length_for_ang_freq(const Bar& b, BendingEnd left, BendingEnd righ
 	return b.length * std::sqrt(w0 / w);
 }
 
+inline double strike_amplitude(const Bar& b, BendingEnd left, BendingEnd right, double w, double I, double xs) {
+	if (!(std::isfinite(w) && w > 0.0)) throw std::invalid_argument("strike_amplitude: angular frequency must be positive and finite");
+	if (xs < 0.0 || xs > b.length) throw std::invalid_argument("strike_amplitude: strike point must lie on the bar (0 <= xs <= L)");
+	const double L = b.length;
+	const double g = std::sqrt(w / (b.crossSection.kappa * longitudinal_phase_speed(b)));   // w = kappa c g^2
+	auto phi = [&](double x) { return mode_shape(left, right, g, L, x); };
+	const double norm = simpson([&](double x) { return phi(x) * phi(x); }, 0.0, L, 2000);
+	return I / (b.density * b.crossSection.area) * phi(xs) / (w * norm);
+}
 }//audphys
