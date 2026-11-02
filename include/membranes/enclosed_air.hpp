@@ -75,4 +75,15 @@ inline double tension_for_ang_freq(const AirVolume& av, double w) {
 	return brent(err, lo, hi);
 }
 
+inline void strike_air_loaded(CircularMode& md, double I, double r0) {
+	if (r0 < 0.0 || r0 > md.a) throw std::invalid_argument("strike_air_loaded: point must lie on the membrane (0 <= r0 <= a)");
+	const double x = md.k * md.a, J0 = first_kind_bessel(0, x), J1 = first_kind_bessel(1, x);
+	const double norm = std::numbers::pi * md.a * md.a * (2.0 * J0 * J0 + J1 * J1 - 4.0 * J0 * J1 / x);
+	const double psi0 = first_kind_bessel(0, md.k * r0) - J0;
+	md.A = I / md.membrane.ps * psi0 / (damped_angular_frequency(md) * norm);
+	md.phi = -std::numbers::pi / 2.0;
+}
+
+
+
 }
