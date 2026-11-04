@@ -7,31 +7,62 @@
 #include <vector>
 
 namespace audphys::oscillators {
+
+class EnclosedAir{
+// gamma = 1.4 for air
+// K = gamma * Pa * S / L
+private:
+ double Pa; //atmospheric pressure [N/m^2]
+ double m; // mass [kg]
+ double S; // cross section area [m]
+ double L; // length [m^2]
+ double gamma = 1.4;
+};
+
+class HelmholtzResonator {
+// m = rho sL
+// K = rho S^2 c^2 / V
+private:
+ double p; // pressure in container [N/m^2]
+ double S; //Cross section area of neck [m^2]
+ double c = 343.3; // Speed of Sound
+};
+
+class Impulse { // we only consider impulse force such as a pluck or strike, wind instruments will be modelled by air speed
+private: 
+ double F;
+ double t; 
+};
+
 class Oscillator{
 public:
- Oscillator(double m_, double K_, double R_, double F_) : m(m_), K(K_), R(R_), F(F_) {};
- const double get_mass(){return m;};
- const double get_K(){return K;};
+ Oscillator(double m_, double K_, double R_, Impulse F_) : m(m_), K(K_), R(R_), F(F_) {};
+ Oscillator(EnclosedAir a, Impulse F_);
+ Oscillator(HelmholtzResonator r, Impulse F_);
+ double get_mass() const {return m;};
+ double get_K() const {return K;};
 private: 
  double m; // mass [kg]
- double K; // spring constant [k/m]
+ double K; // spring constant [N/m]
  double R = 0.0; // Mechnical Resistance
- double F = 0.0; // Force [N]
+ Impulse F; // Force [N]
 };
 	
 class WaveMotion {
 public:
 // ---- Constructors
- WaveMotion(Oscillator o,double x0_, double v0_, double a0_, double w0_);
+ WaveMotion(Oscillator o,double x0_, double v0_, double a0_);
 
 // ---- Eq of motion
- double period(); // 1/f [s]
- double natural_frequency(); // w0 = \sqrt(K/m) [rad/s]
- double displacement(); // x = Acos(w0 t + phi) [m]
- double velocity(); // v = -w0 A sin(w0t + phi) [m/s]
- double acceleration(); // a = -w0^2 A cos(w0t + phi) [m/s^2]
- double amplitude(); // A = sqrt(x0^2 + (v0/w0)^2) [m]
- double phi(); // tan-1(-v0/w0x0) [rad]
+ double period() const; // 1/f [s]
+ double natural_frequency() const; // w0 = \sqrt(K/m) [rad] if R > 0, called damped natural frequency
+ double displacement() const; // x = Acos(w0 t + phi) [m] function takes only oscillator and calls best helper function
+ double velocity() const; // v = -w0 A sin(w0t + phi) [m/s] function takes only oscillator and calls best helper function
+ double acceleration(); // a = -w0^2 A cos(w0t + phi) [m/s^2] function takes only oscillator and calls best helper function
+
+ double get_A() const; //For time dependant amplitudes, return A0
+ double get_phi() const; 
+
 
 // ---- Superposition
  WaveMotion superposition(const std::vector<WaveMotion>&); // For each, check for same/different frequency,
@@ -43,19 +74,36 @@ public:
  WaveMotion operator-(const WaveMotion&);
 
 // ---- Energy 
- double potential_energy(); //1/2 Kx^2 [J]
- double kinetic_energy(); // 1/2 mU^2 [J]
- double total_energy(); // 
+ double potential_energy() const; //1/2 Kx^2 [J]
+ double kinetic_energy() const; // 1/2 mU^2 [J]
+ double total_energy() const; // PE + KE constant for free oscillator [J]
+ 							  // For damped oscillator rate of energy loss is -2* alpha* m * v^2 
+ 							  // Work of forced oscillator w = F(t)*d
 
 // ---- Visualization
 private:
- struct InitialConditions { double x0; double v0; double a0; double w0; };
+ // Input variables
+ double x0; //[m]
+ double v0; //[m/s]
+ double a0; //[m/s^2]
  Oscillator osc; 
- double A;
- double Phi;
+ // Oscillator types
+ bool damped;
+ bool forced;
+ // Derived variables
+ double w0;  // w0 = \sqrt(K/m) [rad] if R > 0, called damped natural frequency
+ double A;   // A = sqrt(x0^2 + (v0/w0)^2) [m]
+ double phi; // tan-1(-v0/w0x0) [rad]
+//---- Damped Helper Functions
+ double alpha() const; // R / 2m
+ double damped_natural_frequency() const; // w = sqrt(w0^2 - alpha^2) [rad]
+ double damped_displacement_helper() const; // A = e^(-alpha*t) cos(wd * t + phi), 
+    										// For critically damped, alpha = w0, xc = x0 *(1+alpha*t) e^(-alpha*t)
+ double quality_factor() const; // Q = omega_0 / 2 alpha() where w0 is undamped nat frequency
+
 };
 
 inline double toAngular(double f) { return 2.0 * std::numbers::pi * f; }; //[hz to rad]
 inline double fromAngular(double w) { return w / (2.0 * std::numbers::pi); }; // [rad to hz]
 
-} //namespace audphys
+} 
