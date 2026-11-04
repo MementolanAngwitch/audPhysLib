@@ -1,3 +1,4 @@
-Audphyslib is a library for physics based signal synthesis which takes physical constraints, measurements, and stimuli as input.
+Audphyslib is a header-only libarry for physical simulation of acoustics. 
 
-
+## Requirements:
+- c++20 
