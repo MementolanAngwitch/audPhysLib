@@ -70,23 +70,6 @@ public:
  double get_A() const; //For time dependant amplitudes, return A0
  double get_phi() const; 
 
-
-// ---- Superposition
- WaveMotion superposition(const std::vector<WaveMotion>&); // For each, check for same/different frequency,
- 														   // Use A = sqrt( (sum(A_n*cos(phi_n)))^2 + ((sum(A_n*sin(phi_n)))^2)
- 														   // Use tan(phi) = (sum(A_n*sin(phi_n)))/(sum(A_n*cos(phi_n)))
- 														   // For different frequncies write w_i+1 = w_i + delta(w)_i
- WaveMotion operator+(const WaveMotion&);
- WaveMotion operator*(const double);
- WaveMotion operator-(const WaveMotion&);
-
-// ---- Energy 
- double potential_energy() const; //1/2 Kx^2 [J]
- double kinetic_energy() const; // 1/2 mU^2 [J]
- double total_energy() const; // PE + KE constant for free oscillator [J]
- 							  // For damped oscillator rate of energy loss is -2* alpha* m * v^2 
- 							  // Work of forced oscillator w = F(t)*d
-
 // ---- Visualization
 private:
  // Input variables
