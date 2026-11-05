@@ -30,8 +30,9 @@ private:
 
 class Impulse { // we only consider impulse force such as a pluck or strike, wind instruments will be modelled by air speed
 private: 
- double F;
- double t; 
+ double F; // Force at t=0 [N]
+ double t; // Time of force application [s]
+ double w; // Sinusoidal wave [rad]
 };
 
 class Oscillator{
@@ -54,8 +55,8 @@ public:
  WaveMotion(Oscillator o,double x0_, double v0_, double a0_);
 
 // ---- Eq of motion
- double period() const; // 1/f [s]
- double natural_frequency() const; // w0 = \sqrt(K/m) [rad] if R > 0, called damped natural frequency
+ double period(double) const; // 1/f [s]
+ //double natural_frequency() const; // w0 = \sqrt(K/m) [rad] if R > 0, called damped natural frequency
  double displacement() const; // x = Acos(w0 t + phi) [m] function takes only oscillator and calls best helper function
  double velocity() const; // v = -w0 A sin(w0t + phi) [m/s] function takes only oscillator and calls best helper function
  double acceleration(); // a = -w0^2 A cos(w0t + phi) [m/s^2] function takes only oscillator and calls best helper function
@@ -86,6 +87,7 @@ private:
  double x0; //[m]
  double v0; //[m/s]
  double a0; //[m/s^2]
+ Impulse F;
  Oscillator osc; 
  // Oscillator types
  bool damped;
@@ -100,7 +102,9 @@ private:
  double damped_displacement_helper() const; // A = e^(-alpha*t) cos(wd * t + phi), 
     										// For critically damped, alpha = w0, xc = x0 *(1+alpha*t) e^(-alpha*t)
  double quality_factor() const; // Q = omega_0 / 2 alpha() where w0 is undamped nat frequency
-
+//---- Impedance and reactance
+ std::complex<double> mechnaical_reactance() const;
+ std::complex<double> mechanical_impedance() const;
 };
 
 inline double toAngular(double f) { return 2.0 * std::numbers::pi * f; }; //[hz to rad]
