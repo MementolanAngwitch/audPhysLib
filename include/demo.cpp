@@ -1,5 +1,17 @@
 #include "oscillators.hpp"
+#include "export.hpp"
+#include <iostream>
 
 int main() {
-	return 0;
+    using namespace audphys;
+    oscillators::Oscillator osc(0.01, 4000.0, 0.0);        // m [kg], K [N/m], R
+    oscillators::Impulse hit(0.0, 0.0, 1.0);               // no force -> free oscillation
+    oscillators::WaveMotion wave(osc, hit, 1.0, 0.0, 0.0); // x0 = 1, v0 = 0, a0 = 0
+
+    std::cout << "x(0) = " << wave.displacement(0.0) << '\n';
+
+    auto data = sample([&](double t) { return wave.displacement(t); }, 48000, 48000);
+    bool ok = write_mono_wav("out.wav", 48000, 16, data);
+    std::cout << (ok ? "wrote out.wav\n" : "write failed\n");
+    return 0;
 }

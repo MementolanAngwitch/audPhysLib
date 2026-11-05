@@ -12,6 +12,7 @@ namespace audphys::oscillators {
 class EnclosedAir{
 // gamma = 1.4 for air
 // K = gamma * Pa * S / L
+ friend class Oscillator;
 public:
  EnclosedAir(double Pa_, double m_, double S_, double L_, double gamma_) : Pa(Pa_), m(m_), S(S_), L(L_), gamma(gamma_) {};
 private:
@@ -25,16 +26,20 @@ private:
 class HelmholtzResonator {
 // m = rho sL
 // K = rho S^2 c^2 / V
+ friend class Oscillator;
 public:
  HelmholtzResonator(double rho_, double S_, double L_, double c_) : rho(rho_), S(S_), L(L_), c(c_) {}; 
 private:
- double rho; // pressure in container [N/m^2]
- double S; //Cross section area of neck [m^2]
- double L;
+ double rho; // air density [kg/m^3]
+ double S;   // cross-section area of neck [m^2]
+ double L;   // neck length [m]
+ double V;   // cavity volume [m^3]
  double c = 343.3; // Speed of Sound
 };
 
 class Impulse { // we only consider impulse force such as a pluck or strike, wind instruments will be modelled by air speed
+ friend class WaveMotion;
+public:
  Impulse(double F_, double t_, double w_) : F(F_), t(t_), w(w_) {};
 private: 
  double F=0.0; // Force at t=0 [N]
@@ -43,6 +48,7 @@ private:
 };
 
 class Oscillator{
+ friend class WaveMotion;
 public:
  Oscillator(double m_, double K_, double R_) : m(m_), K(K_), R(R_) {};
  Oscillator(EnclosedAir a);
@@ -58,14 +64,14 @@ private:
 class WaveMotion {
 public:
 // ---- Constructors
- WaveMotion(Oscillator o,Impulse F_, double x0_, double v0_, double a0_) : osc(o), F(F_), x0(x0_), v0(v0_), a0(a0_) {};
+ WaveMotion(Oscillator o, Impulse F_, double x0_, double v0_, double a0_);
 
 // ---- Eq of motion
  double period(double) const; // 1/f [s]
  //double natural_frequency() const; // w0 = \sqrt(K/m) [rad] if R > 0, called damped natural frequency
  double displacement(double) const; // x = Acos(w0 t + phi) [m] function takes only oscillator and calls best helper function
  double velocity(double) const; // v = -w0 A sin(w0t + phi) [m/s] function takes only oscillator and calls best helper function
- double acceleration(double); // a = -w0^2 A cos(w0t + phi) [m/s^2] function takes only oscillator and calls best helper function
+ double acceleration(double) const; // a = -w0^2 A cos(w0t + phi) [m/s^2] function takes only oscillator and calls best helper function
 
  double get_A() const; //For time dependant amplitudes, return A0
  double get_phi() const; 
@@ -93,11 +99,11 @@ private:
  double forced_displacement_helper() const;
  double quality_factor() const; // Q = omega_0 / 2 alpha() where w0 is undamped nat frequency
 //---- Impedance and reactance
- std::complex<double> mechnaical_reactance() const;
+ double mechanical_reactance() const;
  std::complex<double> mechanical_impedance() const;
 };
 
 inline double toAngular(double f) { return 2.0 * std::numbers::pi * f; }; //[hz to rad]
 inline double fromAngular(double w) { return w / (2.0 * std::numbers::pi); }; // [rad to hz]
 
-} 
+}
