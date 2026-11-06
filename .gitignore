@@ -16,3 +16,5 @@ tests/
 *.gch
 notes/
 *.zip
+*.wav 
+makefile

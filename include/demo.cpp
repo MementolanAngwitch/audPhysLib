@@ -10,7 +10,7 @@ int main() {
 
     std::cout << "x(0) = " << wave.displacement(0.0) << '\n';
 
-    auto data = sample([&](double t) { return wave.displacement(t); }, 48000, 48000);
+    auto data = sample([&](double t) { return static_cast<float>(wave.displacement(t)); }, 48000, 48000);
     bool ok = write_mono_wav("out.wav", 48000, 16, data);
     std::cout << (ok ? "wrote out.wav\n" : "write failed\n");
     return 0;
