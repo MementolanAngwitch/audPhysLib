@@ -133,3 +133,14 @@ std::vector<std::pair<double,double>> bracket_finder(F f, double lo, double hi, 
 	}
 	return out;
 }
+
+template<class F>
+ double simpson(F f, double a, double b, std::size_t n) {
+    double h = (b - a) / (2.0 * n);
+    double oddSum = 0.0, evenSum = 0.0;
+    for (std::size_t j = 1; j <= n; ++j) {
+        oddSum += f(a + (2.0 * j - 1.0) * h);           // x_1, x_3, ..., x_{2n-1}
+        if (j < n) evenSum += f(a + (2.0 * j) * h);     // x_2, x_4, ..., x_{2n-2}
+    }
+    return h / 3.0 * (f(a) + 4.0 * oddSum + 2.0 * evenSum + f(b));
+}
