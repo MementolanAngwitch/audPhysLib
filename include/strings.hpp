@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 #include <concepts>
-#include "include/tools.hpp"
+#include "tools.hpp"
 namespace audphys::strings{
 
 enum class BoundaryCondition { Fixed, Free };
@@ -41,20 +41,40 @@ private:
  G g; //Left Bound Wave
 };
 
-class PluckingString {
+template<class Shape> 
+requires std::invocable<Shape, double> 
+class PluckedString {
  public:
- 	PluckedString(String s_, double n_, double x0_, double v0_) : s(s_), n(n_), x0(x0_), v0(v0_) {make_modes(); };
- 	{ if (!(s.get_right() == BoundaryCondition::Fixed && s.get_left() == BoundaryCondition::Fixed)) throw; };
- 	void make_modes();
- 	double mode_displacement(std::size_t n, double x, double t); 
- 	double displacement(double x, double t);
+ 	PluckedString(String s_, double n_, Shape shape_) : s(s_), n(n_), shape(shape_){ 
+ 	 	if (!(s.get_right() == BoundaryCondition::Fixed && s.get_left() == BoundaryCondition::Fixed)) throw; 
+    	make_modes();
+    }
+ 	void make_modes(double x) {
+		for (std::size_t i = 0; i < n; ++i) {
+			const double w_i = i * std::numbers::pi * s.wavespeed() / s.get_length(); 
+			A.push_back( (2.0 / (w_i * s.L)) * simpson([&]() { Shape(x) * std::sin((i*std::numbers::pi*x)/s.L);}, 0, s.L) );
+			B.push_back(0.0); //B_n = 0 for string starting at rest
+		}
+	}
+ 	double mode_displacement(std::size_t i, double x, double t) {
+		const double w_i = i * std::numbers::pi * s.wavespeed() / s.get_length(); 
+		return ( A[i] * std::sin(w_i * t) + B[i] * std::cos(w_i * t) ) * std::sin((w_i*x)/s.wavespeed());
+	}
+
+ 	double displacement(double x, double t) {
+		double sum = 0.0;
+		for (std::size_t i = 0; i < n; ++i) {
+			sum += mode_displacement(i, x, t);
+		}
+		return sum;
+	}
+
  private:
  	std::vector<double> A;
  	std::vector<double> B;
  	double n;
  	String s;
- 	x0;
- 	v0;
+ 	Shape shape;
 };
 
 }

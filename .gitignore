@@ -17,4 +17,4 @@ tests/
 notes/
 *.zip
 *.wav 
-makefile
+Makefile

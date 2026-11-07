@@ -1,10 +1,9 @@
 #include "include/oscillators.hpp"
 #include "include/export.hpp"
 #include "include/strings.hpp"
-#include "include/tools.hpp"
+#include "include/tools.cpp"
 #include <iostream>
-// g++ demo.cpp -Iinclude -std=c++20 .\include\strings.cpp .\include\oscillators.cpp .\include\export.cpp
-
+// g++ demo.cpp -Iinclude -std=c++20 .\include\strings.hpp .\include\oscillators.cpp .\include\export.cpp
 using namespace audphys;
 
 int main() {

@@ -1,3 +1,4 @@
+#include "tools.hpp"
 	/*
 	Method begins with: stopping tolerance TOL > 0 and points a and b such that f(a)f(b) < 0
 	At each iteration the method maintains a,b,c such that b \neq c and
@@ -43,7 +44,7 @@
 	*/
 
 template<class F>
-double brent(F f, double x0, double x1, double TOL = 1e-15, std::size_t N = 1000) {
+double brent(F f, double x0, double x1, double TOL, std::size_t N) {
 	const double eps = std::numeric_limits<double>::epsilon();
 	
 	double fx0 = f(x0), fx1 = f(x1);
