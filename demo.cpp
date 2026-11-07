@@ -21,5 +21,6 @@ int main() {
     //String
     using BC = strings::BoundaryCondition;
     strings::String string(1.0,0.1,1.0,BC::Fixed,BC::Fixed); 
+    strings::PluckedString pluckedString(string, 10, [](double t){return t;});
     return 0;
 }
