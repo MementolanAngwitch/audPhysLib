@@ -7,9 +7,13 @@
 #include <concepts>
 #include <complex>
 #include "tools.hpp"
+#include "input.hpp"
+
+// TODO: Route class Input into strings, final syntax should like something like 
+// gen(String, Air, Input) -> std::vector<float> with size t/dt. 
 namespace audphys::strings {
 
-enum class BoundaryCondition { Fixed, Free }; // TODO: Replace BoundaryCondition with Support
+enum class BoundaryCondition { Fixed, Free }; // TODO: Replace BoundaryCondition with Support since real supports are not perfectly fixed
 
 class Support {
 	double m; 
@@ -23,12 +27,12 @@ public:
 		: L(L_), mu(mu_), T(T_), r(r_), E(E_), left(left_), right(right_) {}
 	double get_length() const { return L; }
 	double get_mu() const { return mu; }
-	double get_rho() const { return std::numbers::pi * r * r * mu; }
+	double get_rho() const { return mu / std::numbers::pi * r * r; }
 	double get_tension() const { return T; }
 	double wavespeed() const { return std::sqrt(T / mu); }
 	double get_radius() const { return r;}
 	std::complex<double> get_young_mod() const { return E;}
-	std::complex<double> impedance() const { return std::sqrt(T * std::numbers::pi * r * r * mu); }
+	std::complex<double> impedance() const { return std::sqrt(T * mu); }
 	BoundaryCondition get_left() const { return left; }
 	BoundaryCondition get_right() const { return right; }
 	// Folds a position back onto the string and returns it.
@@ -57,6 +61,32 @@ private:
 	double rho = 1.2;    // air density [kg/m^3]
 	double eta = 1.5e-5; // kinematic viscosity [m^2/s]
 };
+
+
+// Damping decay times: A = A_0 * e^(-t/tau)
+double tau_air(Air, String, double, double);
+
+double tau_internal(String, double, double);
+
+double tau_support(String, double);
+
+double tau_total(Air, String, double, double);
+
+
+// q_n'' + (2/tau_n) q_n' + w_n^2 q_n = (2 / (mu L)) * phi_n(x0) * F(t),
+// with mode shape phi_n(x) = sin(n pi x / L).
+// On a fixed-fixed string
+class PlayString {
+
+private:
+	String s;
+	Air air; 
+	double tau; 			  // decay time [s]
+	std::vector<double> q;    // modal displacement [m]
+	std::vector<double> qdot; // modal velocity [m/s]
+	double w;				  // angular frequency [rad/s]
+};
+
 template<class F, class G>
 requires std::invocable<F, double> && std::invocable<G, double>
 class TransverseWaves { // Takes infinite string
@@ -72,6 +102,7 @@ private:
 	G g; // Left-bound wave
 };
 
+// Antiquated, keep for reference and solution checking
 template<class Shape>
 requires std::invocable<Shape, double>
 class PluckedString { // Initial displacement, zero initial velocity
@@ -111,6 +142,7 @@ private:
 	std::vector<double> B; // Mode contribution from y
 };
 
+// Antiquated, keep for reference and solution checking
 template<class Shape>
 requires std::invocable<Shape, double>
 class StruckString { // Zero initial displacement, initial velocity
@@ -149,12 +181,12 @@ private:
 	std::vector<double> A; // Mode contribution from y'
 	std::vector<double> B; // Mode contribution from y
 };
-
+/// Antiquated, keep for reference and solution checking
 class HammerString {
 public:
 	HammerString(String s_, double v0_, double M_, double x0_) : s(s_), v0(v0_), M(M_), x0(x0_) {}
 	double contact_displacement(double t) const;
-	double displacement(double t, double x) const; // TODO: only true for long strings
+	double displacement(double x , double t) const; // TODO: only true for long strings
 private:
 	String s;
 	double v0; // Initial velocity [m/s]
@@ -165,27 +197,5 @@ private:
 // class BowedString {
 //     TODO
 // };
-
-// Damping decay times: A = A_0 * e^(-t/tau)
-double tau_air(Air air, String s, double f, double v) {
-	const double rho = s.get_mu() * std::numbers::pi * s.get_radius() * s.get_radius();
-	const double M = (s.get_radius()/2.0) * std::sqrt(2.0*std::numbers::pi*f / air.get_eta());
-	return rho/(2.0 * std::numbers::pi * air.get_rho() * f) * (2.0*M*M)/(2.0 * std::sqrt(2.0) * M + 1.0);
-} 
-
-double tau_internal(String s, double f, double v) {
-	const double E1 = s.get_young_mod().real();
-	const double E2 = s.get_young_mod().imag();
-	return (1.0 / (std::numbers::pi * f)) * E1/E2;
-}
-
-double tau_support(String s, double f) {
-	const double G = std::pow(s.impedance(), -1).real(); 
-	return std::pow(8.0 * s.get_mu() * s.get_length() * f * f * G,-1);
-}
-
-double tau_total(Air air, String s, double f, double v) {
-	return std::pow( 1.0/tau_air(air,s,f,v)  + 1.0/tau_internal(s,f,v) + 1.0/tau_support(s,f),-1);
-}
 
 } 
