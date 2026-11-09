@@ -13,7 +13,7 @@ void write_le(std::ofstream& file, std::int64_t value, int bytes) {
 }
 
 //Writes mono PCM audio, bit_depth must be 16,24 or 32
-bool write_mono_wav(const std::string fileName, int sample_rate, int bit_depth, const std::vector<double>& data) {
+bool write_mono_wav(const std::string fileName, int sample_rate, int bit_depth, const std::vector<float>& data) {
 	//Standard: sr=48000, bit_depth = 16
 
 	std::ofstream file(fileName, std::ios::binary);
@@ -41,9 +41,9 @@ bool write_mono_wav(const std::string fileName, int sample_rate, int bit_depth, 
 
 	const std::int64_t pre = file.tellp();
 
-	const double max_amplitude = std::pow(2.0, bit_depth-1) -1;
-	for (double s: data) {
-		s = std::clamp(s,-1.0,1.0);
+	const float max_amplitude = std::pow(2.0f, bit_depth -1.0f) -1.0f;
+	for (float s: data) {
+		s = std::clamp(s,-1.0f,1.0f);
 		write_le(file, std::llround(s*max_amplitude), bytes_per_sample);
 	}
 
