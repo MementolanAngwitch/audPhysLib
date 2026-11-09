@@ -64,27 +64,55 @@ private:
 
 
 // Damping decay times: A = A_0 * e^(-t/tau)
-double tau_air(Air, String, double, double);
+double tau_air(Air air, String s, double w, double v);
 
-double tau_internal(String, double, double);
+double tau_internal(String s, double w, double v);
 
-double tau_support(String, double);
+double tau_support(String s, double w);
 
-double tau_total(Air, String, double, double);
+double tau_total(Air air, String s, double w, double v);
 
 
 // q_n'' + (2/tau_n) q_n' + w_n^2 q_n = (2 / (mu L)) * phi_n(x0) * F(t),
 // with mode shape phi_n(x) = sin(n pi x / L).
 // On a fixed-fixed string
 class PlayString {
+public: 
+	PlayString(String s_, Air air_, std::size_t n) : s(s_), air(air_), q(n, 0.0), qdot(n, 0.0), w(n), tau(n) {
+		const double L = s.get_length();
+		for (std::size_t i = 0; i < n; ++i) {
+			w[i] = (i+1) * std::numbers::pi * s.wavespeed() / L; // f_n = n v/2L -> wn = f_n * 2pi = (n*v*pi)/L
+			tau[i] = tau_total(air_, s_, w[i], 0.0);
+		}
+	}
+	double shape(std::size_t i, double x) const;
+	void pluck(double x0, double h);
+	void strike(double x0, double J);
+	void step(double dt, double x0, double F);
+	double displacement(double x) const;
 
 private:
 	String s;
 	Air air; 
-	double tau; 			  // decay time [s]
+	std::vector<double> tau; 			  // decay time [s]
 	std::vector<double> q;    // modal displacement [m]
 	std::vector<double> qdot; // modal velocity [m/s]
-	double w;				  // angular frequency [rad/s]
+	std::vector<double> w;	  // angular frequency [rad/s]
+};
+// A hammer with a compressible felt tip. Force exists only while the felt is squeezed:
+// F = K * compression^p  if compression > 0, else 0.
+class Hammer {
+public:
+	Hammer(double M_, double K_, double p_, double x0_, double v0_) 
+	 : M(M_), K(K_), x0(x0_), v(v0_) {};
+	void step(PlayString& s, double dt);
+private:
+	double M; 	    // hammer mass [kg]
+	double K;       // felt stiffness [n/m^p]
+	double p; 	    // felt stiffness exponent 
+	double x0; 	    // strike point [m]
+	double v;       // hammer velocity [m/s], postive toward string
+	double y = 0.0; // hammer position [m], starts touching the string at rest
 };
 
 template<class F, class G>
