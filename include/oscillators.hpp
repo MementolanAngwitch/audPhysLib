@@ -103,7 +103,5 @@ private:
  std::complex<double> mechanical_impedance() const;
 };
 
-inline double toAngular(double f) { return 2.0 * std::numbers::pi * f; }; //[hz to rad]
-inline double fromAngular(double w) { return w / (2.0 * std::numbers::pi); }; // [rad to hz]
 
 }

@@ -146,3 +146,6 @@ template<class F>
     }
     return h / 3.0 * (f(a) + 4.0 * oddSum + 2.0 * evenSum + f(b));
 }
+
+inline double toAngular(double f) { return 2.0 * std::numbers::pi * f; }; //[hz to rad]
+inline double fromAngular(double w) { return w / (2.0 * std::numbers::pi); }; // [rad to hz]

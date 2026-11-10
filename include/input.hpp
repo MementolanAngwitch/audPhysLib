@@ -35,3 +35,8 @@ private:
 	Force f;
 	Location l;
 };
+
+template<class E>
+concept Exciter = requires(E e, const PlayString& s, float dt) {
+	{e.force}
+}
