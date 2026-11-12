@@ -1,3 +1,8 @@
+#pragma once
+#include "strings.hpp"
+// FIXED(review): no includes/namespace before
+namespace audphys::strings {
+
 template<class F, class G>
 requires std::invocable<F, float> && std::invocable<G, float>
 class TransverseWaves { // Takes infinite string
@@ -29,7 +34,7 @@ public:
 			const float k = static_cast<float>(i + 1); // mode number 1..n
 			B.push_back((2.0 / L) * simpson([&](float x) {
 				return shape(x) * std::sin(k * std::numbers::pi * x / L);
-			}, 0.0, L));
+			}, 0.0f, L, 200)); // FIXED(review): simpson needs n
 			A.push_back(0.0); // A_n = 0 for zero initial velocity
 		}
 	}
@@ -70,7 +75,7 @@ public:
 			const float w_i = k * std::numbers::pi * s.wavespeed() / L;
 			A.push_back((2.0 / (L * w_i)) * simpson([&](float x) {
 				return shape(x) * std::sin(k * std::numbers::pi * x / L);
-			}, 0.0, L));
+			}, 0.0f, L, 200)); // FIXED(review): simpson needs n
 			B.push_back(0.0); // B_n = 0 for zero initial displacement
 		}
 	}
@@ -108,3 +113,5 @@ private:
 // class BowedString {
 //     TODO
 // };
+
+} // namespace

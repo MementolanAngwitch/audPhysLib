@@ -1,14 +1,14 @@
 #include "strings.hpp"
 
 namespace audphys::strings {
-void fill_shapes(float x, float L, std::vector<float>& out) {
+void fill_shapes(float x, float L, std::vector<float>& out) { //loses accuracy at high mode counts
 	const float theta = std::numbers::pi * x/L;
 	const float c = 2.0 * std::cos(theta);
 	float prev = 0.0;
 	float curr = std::sin(theta);
 	for (std::size_t i = 0; i < out.size(); ++i) {
 		out[i] = curr;
-		const float next = c * curr - prev;
+		const double next = c * curr - prev;
 		prev = curr;
 		curr = next;
 	}
@@ -28,8 +28,7 @@ float tau_internal(const String& s, float w) {
 }
 
 float tau_support(const String& s, float G) {
-	const float f1 = s.wavespeed() / (2.0 * s.get_length());
-	return 1.0 / (8.0 * s.get_mu() * s.get_length() * f1 * f1 * G);
+	return s.get_length() / (2.0 * s.get_tension() * G);
 }
 
 float tau_total(const Air& air, const String& s, float w, float G) {
@@ -42,24 +41,25 @@ void PlayString::pluck(float x0, float h) {
 	const float L = s.get_length();
 	for (std::size_t i = 0; i < q.size(); ++i) {
 		const float k = (i + 1) * std::numbers::pi;
-		q[i] += 2.0 * h * L * L / (k * k * x_contact * (L - x_contact)) * phi_contact[i]; 
+		const float B = 2.0 * h * L * L / (k * k * x_contact * (L - x_contact)) * phi_contact[i];
+		q[i]      += B;
+		q_prev[i] += B * back[i];
 	}
 }
 
 void PlayString::strike(float x0, float J){
 	set_contact(x0); // FIXED: x0 was ignored
 	const float g = 2.0 / (s.get_mu() * s.get_length());
-	for (std::size_t i = 0; i < qdot.size(); ++i) {
-		qdot[i] += g * J * phi_contact[i];
+	for (std::size_t i = 0; i < q.size(); ++i) {
+		q_prev[i] -= kick[i] * g * J * phi_contact[i];  // q unchanged: string still flat
 	}
 }
 
-void PlayString::step(float dt, float F) {
-	const float g = 2.0 / (s.get_mu() * s.get_length());
+void PlayString::step(float, float F) {
 	for (std::size_t i = 0; i < q.size(); ++i) {
-		const float a = g * F * phi_contact[i] - 2.0 * qdot[i] / tau[i] - w[i] * w[i] * q[i];
-		qdot[i] += a * dt;
-		q[i] += qdot[i] * dt;
+		const double next = c1[i] * q[i] - c2[i] * q_prev[i] + b[i] * phi_contact[i] * F;
+		q_prev[i] = q[i];
+		q[i] = next;
 	}
 }
 
@@ -70,17 +70,6 @@ float Hammer::step(PlayString& s, float dt) {
 	y += v * dt; 
 	s.step(dt,F); // Hammer pushes on the string
 	return F;
-}
-
-
-float HammerString::contact_displacement(float t) const {
-	const float tau = M * s.wavespeed() / (2.0 * s.get_tension());
-	return v0 * tau * (1.0 - std::exp(-t / tau));
-}
-
-float HammerString::displacement(float x, float t) const {
-	x = s.check_length(x);
-	return contact_displacement(t - ((x - x0) / s.wavespeed()));
 }
 
 }

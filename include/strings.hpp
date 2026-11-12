@@ -31,7 +31,7 @@ public:
 	float get_tension() const { return T; };
 	float wavespeed() const { return std::sqrt(T / mu); };
 	float get_radius() const { return r;};
-	float fundamental() const { return std::numbers::pi_v<float> * s.wavespeed() / L; } //[rad/s]
+	float fundamental() const { return std::numbers::pi_v<float> * wavespeed() / L; } //[rad/s]
 	std::complex<float> get_young_mod() const { return E;};
 	std::complex<float> impedance() const { return std::sqrt(T * mu); };
 	BoundaryCondition get_left() const { return left; };
@@ -70,6 +70,9 @@ float tau_air(const Air& air, const String& s, float w);
 
 float tau_internal(const String& s, float w);
 
+// Support (bridge) losses. With a frequency-independent conductance G at both ends,
+// every mode loses the same fraction of energy per round trip, so tau is the same for all modes:
+// tau = 1 / (8 mu L f1^2 G) = L / (2 T G). Frequency dependence enters only through G(f).
 float tau_support(const String& s, float G);
 
 float tau_total(const Air& air, const String& s, float w, float G);
@@ -82,17 +85,30 @@ void fill_shapes(float x, float L, std::vector<float>& out);
 // On a fixed-fixed string
 class PlayString {
 public: 
-	PlayString(const String& s_, const Air& air_, float G, float f_max, float dt, float x_listen) 
-			   : s(s_), air(air_), tau(n), q(n, 0.0), qdot(n, 0.0), w(n),
-			     phi_contact(n, 0.0), phi_listen(n, 0.0) { // FIXED: lists sized, not just reserved
+	PlayString(const String& s_, const Air& air_, float G, float f_max, float dt, float x_listen)
+			   : s(s_), air(air_) {
 		const float L = s.get_length();
-		n = static_cast<std::size_t>(f_max / (w1 / (2.0f * std::numbers::pi_v<float>)))
+		const std::size_t n = static_cast<std::size_t>(f_max / (s.fundamental() / (2.0f * std::numbers::pi_v<float>)));
+		const float g = 2.0f / (s.get_mu() * L);
+		tau.assign(n, 0.0f); w.assign(n, 0.0f); q.assign(n, 0.0f); q_prev.assign(n, 0.0f);
+		c1.assign(n, 0.0f); c2.assign(n, 0.0f); b.assign(n, 0.0f); back.assign(n, 0.0f); kick.assign(n, 0.0f);
+		phi_contact.assign(n, 0.0f); phi_listen.assign(n, 0.0f);
 		for (std::size_t i = 0; i < n; ++i) {
-			w[i] = (i+1) * std::numbers::pi * s.wavespeed() / L; // f_n = n v/2L -> wn = f_n * 2pi = (n*v*pi)/L
+			w[i]   = (i+1) * std::numbers::pi * s.wavespeed() / L;
 			tau[i] = tau_total(air_, s_, w[i], G);
+			const double a  = 1.0 / tau[i];                    // decay rate alpha = 1/tau
+			const double wd = std::sqrt(w[i]*w[i] - a*a);      // damped frequency
+			const double R  = std::exp(-a * dt);
+			const double th = wd * dt;
+			c1[i]   = 2.0 * R * std::cos(th);
+			c2[i]   = R * R;
+			b[i]    = g * dt * R * std::sin(th) / wd;          // times phi_contact[i] * F
+			back[i] = std::exp(a * dt) * (std::cos(th) - a * std::sin(th) / wd); // q[-1]/q[0], released at rest
+			kick[i] = std::exp(a * dt) * std::sin(th) / wd;    // q[-1] per unit velocity kick
 		}
 		fill_shapes(x_listen, L, phi_listen);
 	}
+	std::size_t modes() const { return q.size(); } 
 
 	void set_contact(double x) {x_contact = x; fill_shapes(x, s.get_length(), phi_contact);};
 	void pluck(float x0, float h);
@@ -105,10 +121,12 @@ public:
 
 private:
 	String s;
-	Air air; 
-	std::vector<float> tau;  // decay time [s]
-	std::vector<float> q;    // modal displacement [m]
-	std::vector<float> qdot; // modal velocity [m/s]
+	Air air;
+	std::vector<float> tau;    // decay time [s]
+	std::vector<double> q;    // modal displacement now [m]
+	std::vector<double> q_prev; // modal displacement one sample ago [m]
+	std::vector<double> c1, c2, b;  // recurrence coefficients, fixed per mode
+	std::vector<float> back, kick; // for turning pluck/strike into two samples
 	std::vector<float> w;	 // angular frequency [rad/s]
 	std::vector<float> phi_contact;
 	std::vector<float> phi_listen; // modes at contact and at listen
@@ -136,8 +154,9 @@ private:
 	float y = 0.0; // hammer position [m], starts touching the string at rest
 };
 
-std::vector<float> render(const PlayString& str, std::size_t N, double dt){
+inline std::vector<float> render(PlayString& str, std::size_t N, float dt){
 	std::vector<float> out(N);
 	for (std::size_t k = 0; k < N; ++k) { str.step(dt); out[k] = str.output(); }
+	return out;
 }
-} 
+}

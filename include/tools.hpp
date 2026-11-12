@@ -1,5 +1,11 @@
 #pragma once
-
+#pragma once
+#include <cmath>
+#include <limits>
+#include <numbers>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 	/*
 	Method begins with: stopping tolerance TOL > 0 and points a and b such that f(a)f(b) < 0
 	At each iteration the method maintains a,b,c such that b \neq c and
