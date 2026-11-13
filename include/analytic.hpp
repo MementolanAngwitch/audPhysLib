@@ -1,5 +1,7 @@
 #pragma once
+#include <concepts>
 #include "strings.hpp"
+#include "tools.hpp"
 // FIXED(review): no includes/namespace before
 namespace audphys::strings {
 
@@ -24,7 +26,7 @@ requires std::invocable<Shape, float>
 class PluckedString { // Initial displacement, zero initial velocity
 public:
 	PluckedString(Air air_, String s_, std::size_t n_, Shape shape_) : air(air_), s(s_), n(n_), shape(shape_) {
-		if (!(s.get_right() == BoundaryCondition::Fixed && s.get_left() == BoundaryCondition::Fixed))
+		if (!(s.get_left().is_rigid() && s.get_right().is_rigid()))
 			throw std::invalid_argument("PluckedString requires fixed ends");
 		make_modes();
 	}
@@ -64,7 +66,7 @@ requires std::invocable<Shape, float>
 class StruckString { // Zero initial displacement, initial velocity
 public:
 	StruckString(String s_, std::size_t n_, Shape shape_) : s(s_), n(n_), shape(shape_) {
-		if (!(s.get_right() == BoundaryCondition::Fixed && s.get_left() == BoundaryCondition::Fixed))
+		if (!(s.get_left().is_rigid() && s.get_right().is_rigid()))
 			throw std::invalid_argument("StruckString requires fixed ends");
 		make_modes();
 	}
