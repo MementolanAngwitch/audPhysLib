@@ -16,6 +16,7 @@ namespace audphys::strings {
 enum class BoundaryCondition { Fixed, Free }; // TODO: Replace BoundaryCondition with Support since real supports are not perfectly fixed
 
 class Support { //cotkL = m/M kL where M = \mu * L is the total mass of the string, solve for k and feed
+				//kn = npi/L 
 	float m; 
 };
 
