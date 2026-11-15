@@ -105,6 +105,7 @@ void fill_shapes(float x, float L, std::vector<float>& out);
 // Advanced by recurrence relationship
 //     q[k+1] = 2R cos(w_d dt) q[k] - R^2 q[k-1] + b F,   R = e^(-dt/tau)
 // The time step is fixed at construction because the coefficients depend on it.
+// Non stiff string
 class PlayString {
 public:
 	PlayString(const String& s_, const Air& air, float w_max, float dt_, float x_listen);
@@ -145,6 +146,25 @@ private:
 		return y;
 	}
 };
+
+// Stiff string - By Euler-Bernoulli, tensioned strings namely piano
+
+class PianoString {
+public:
+private:
+	String s;
+	float dt;
+	float x_contact = 0.0f;           // 0 = no contact point yet (all shapes vanish)
+	std::vector<float> w;             // mode frequency [rad/s]
+	std::vector<float> tau;           // decay time [s]
+	std::vector<double> q;            // modal displacement now [m]
+	std::vector<double> q_prev;       // modal displacement one sample ago [m]
+	std::vector<double> c1, c2, b;    // recurrence coefficients (double: c1 ~ 2, c2 ~ 1)
+	std::vector<double> back, kick;   // turn pluck / strike into a value for q_prev
+	std::vector<float> phi_contact;   // mode shapes at the contact point
+	std::vector<float> phi_listen;    // mode shapes at the listening point
+ 
+}
 
 // ---- Exciters ---------------------------------------------------------------------
 

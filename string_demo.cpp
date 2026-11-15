@@ -8,7 +8,7 @@
 using namespace audphys;
 using namespace audphys::strings;
  
-// g++ demo.cpp -Iinclude -std=c++20 .\include\strings.cpp .\include\oscillators.cpp .\include\export.cpp .\include\input.cpp
+// g++ string_demo.cpp -Iinclude -std=c++20 .\include\strings.cpp .\include\oscillators.cpp .\include\export.cpp .\include\input.cpp
 // A steel guitar high-E string (0.25 mm diameter, 650 mm scale, tuned to ~329.6 Hz)
 constexpr float L   = 0.65f;
 constexpr float r   = 0.000125f;
