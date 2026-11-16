@@ -106,6 +106,7 @@ void fill_shapes(float x, float L, std::vector<float>& out);
 //     q[k+1] = 2R cos(w_d dt) q[k] - R^2 q[k-1] + b F,   R = e^(-dt/tau)
 // The time step is fixed at construction because the coefficients depend on it.
 // Non stiff string
+
 class PlayString {
 public:
 	PlayString(const String& s_, const Air& air, float w_max, float dt_, float x_listen);
