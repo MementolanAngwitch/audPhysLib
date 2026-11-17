@@ -74,7 +74,7 @@
           y_n[k] = 2r cos(w_n T) y_n[k-1] - r^2 y_n[k-2] + g_n x[k],   r = exp(-zeta_n w_n T)
 
  FURTHER CONSIDERATIONS
-  Undercut bars (marimba, xylophone, vibraphone) are not uniform: needs a 1-D Timoshenko FEM.
+  Undercut bars (marimba, xylophone, vibraphone) are not uniform: needs a 1-D Timoshenko FEM, maybe 3d modelling.
   Damping is not part of Timoshenko theory: supply zeta_n per mode or a loss factor (zeta = eta/2).
 */
 
@@ -89,7 +89,7 @@ enum class BoundaryConditions { Free, Clamped, Hinged, Sliding };
 
 struct Dispersion {
 	double a;      // oscillating wave number
-	double b;      // b below the cutoff, ~b above it
+	std::complex<double> b;      // b below the cutoff, ~b above it
 	bool above;    // true when a > a_c
 };
 
@@ -123,6 +123,26 @@ private:
 	double G;      // Shear modulus [Pa]
 	double rho;    // Volumetric density [kg/m^3]
 	double kprime; // Shear factor [-]
+};
+
+// Shear factors k'
+inline double kprime_circle(double v)          { return 6.0 * (1.0 + v) / (7.0 + 6.0 * v); }
+inline double kprime_rectangle(double v)       { return 10.0 * (1.0 + v) / (12.0 + 11.0 * v); }
+inline double kprime_thin_round_tube(double v) { return 2.0 * (1.0 + v) / (4.0 + 3.0 * v); }
+inline double kprime_thin_square_tube(double v){ return 20.0 * (1.0 + v) / (48.0 + 39.0 * v); }
+inline double kprime_hollow_circle(double v, double m) { // m = r_inner / r_outer
+   const double q = (1.0 + m * m) * (1.0 + m * m);
+   return 6.0 * (1.0 + v) * q / ((7.0 + 6.0 * v) * q + (20.0 + 12.0 * v) * m * m);
+}
+
+class Air {
+public:
+   Air(float rho_, float eta_) : rho(rho_), eta(eta_) {};
+   float get_rho() const { return rho; };
+   float get_eta() const { return eta; };
+private:
+   float rho = 1.2f;    // air density [kg/m^3]
+   float eta = 1.5e-5f; // kinematic viscosity [m^2/s]
 };
 
 class BarModes{ 
