@@ -79,6 +79,7 @@
 */
 
 #pragma once
+#include <complex>
 #include "input.hpp"
 #include "tools.hpp"
 
@@ -144,6 +145,60 @@ private:
    float rho = 1.2f;    // air density [kg/m^3]
    float eta = 1.5e-5f; // kinematic viscosity [m^2/s]
 };
+
+// Dispersion equations
+
+Dispersion dispersion(double wbar, double s2, double u2);   // wave numbers at chart frequency wbar for s2 and upsilon2
+double wbar_from_a(double a, double s2, double u2);         // inverse of the dispersion relation
+Dispersion dispersion_at_a(double a, double s2, double u2); // dispersion evaluated at a known a
+inline double critical_a(double s2, double u2) { return std::sqrt(s2 * (1.0+u2)/u2); } // s sqrt(1+1/u^2)
+inline double critical_wbar(double s2, double u2) { return std::sqrt(s2/u2); }         // s / u
+
+// Geometries and BC
+enum class Base {FF,CC,HH,CF}; // four cases that need a frequency equation, rest are related to these 4
+double freq_eq_below(Base base, double a, double b, double u2); // switch-case for the four freq eqs for a < ac
+double freq_eq_above(Base base, double a, double b, double u2); // switch-case for the four freq eqs for ac > a
+double freq_eq(Base base, double a, double s2, double u2); // freq eq as a function of the oscillating wave number a
+
+// Basis functions at x in [0, 1]. Row = quantity (0: W, 1: W', 2: Psi, 3: Psi'), column = coefficient C1..C4.
+// Below cutoff, sinh/cosh are replaced by e^{-bx}, e^{-b(1-x)}
+using Mat4 = std::array<std::array<double,4>,4>;
+
+Mat4 basis(double x, const Dispersion& d, double u2);
+std::array<std::array<double, 4>,2> bc_rows(BoundaryConditions end, const Mat4& B);
+Mat4 build_f(BoundaryConditions left, BoundaryConditions right, const Dispersion& d, double u2);
+
+// Modal machinery
+inline double det3(double m00, double m01, double m02, // 3x3 determinant
+                   double m10, double m11, double m12,
+                   double m20, double m21, double m22) {
+   return m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20) + m02 * (m10 * m21 - m11 * m20);
+} 
+
+// Determinant of the 3x3 minor of F with row r and column j removed.
+inline double minor3(const Mat4& F, int r, int j) {
+   int rows[3], cols[3];
+   for (int i = 0, k = 0; i < 4; ++i) if (i != r) rows[k++] = i;
+   for (int i = 0, k = 0; i < 4; ++i) if (i != j) cols[k++] = i;
+   const auto& R0 = F[rows[0]]; const auto& R1 = F[rows[1]]; const auto& R2 = F[rows[2]];
+   return det3(R0[cols[0]], R0[cols[1]], R0[cols[2]],
+               R1[cols[0]], R1[cols[1]], R1[cols[2]],
+               R2[cols[0]], R2[cols[1]], R2[cols[2]]);
+}
+
+inline double det4(const Mat4& F) {
+   double d = 0.0;
+   for (int j = 0; j < 4; ++j) d += ((j % 2) ? -1.0 : 1.0) * F[0][j] * minor3(F, 0, j);
+   return d;
+}
+
+std::array<double,4> null_vector(const Mat4& F); // null vector of a near-singular 4x4 matrix from co factors of three of its rows. 
+                                                 // The dropped row is chosen to give the largest vector, so no essential row is discarded
+double residual(const Mat4& F, const std::array<double,4>& C); // Relative residual |F C| / (max|F|max|C|): near zero at a true root
+std::array<double,2> mode_eval(const std::array<double,4>& C, const Dispersion& d, double u2, double x); // W and Psi of a mode at x in [0,1]
+std::vector<double> scan_roots(Base base, double s2, double u2, double wbar_max); // roots a of a base case frequency with wbar <= wbar_max
+
+
 
 class BarModes{ 
 public:
