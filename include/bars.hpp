@@ -200,18 +200,50 @@ std::vector<double> scan_roots(Base base, double s2, double u2, double wbar_max)
 
 
 
-class BarModes{ 
+class BarModes {
 public:
-	BarModes(Bar, double);
-	Dispersion dispersion(double,double,double);
-private:
-	Bar bar;
-	std::vector<double> a;    // switch to std::array for embedded
-	std::vector<double> b;
-	std::vector<double> w_bar; // w * L * sqrt(rho/E)
-	std::vector<double> w;
-	double f_max;
-};
+   // omega_max [rad/s]: every mode up to this angular frequency is found.
+   BarModes(const Bar& bar_, BoundaryConditions left_, BoundaryConditions right_, double omega_max_);
 
+   std::size_t count() const { return w.size(); }
+   double omega(std::size_t n) const { return w[n]; }       // [rad/s]
+   double wbar(std::size_t n) const { return w_bar[n]; }    // w L sqrt(rho/E)
+   double get_a(std::size_t n) const { return a[n]; }
+   double get_b(std::size_t n) const { return b[n]; }       // b below the cutoff, ~b above
+   bool is_above(std::size_t n) const { return above[n]; }
+   double get_residual(std::size_t n) const { return res[n]; }
+
+   // Normalized mode shape at dimensionless position x = x*/L in [0, 1]: W = v/L, Psi = rotation [rad].
+   double W(std::size_t n, double x) const   { return mode_eval(C[n], disp(n), u2, x)[0]; }
+   double Psi(std::size_t n, double x) const { return mode_eval(C[n], disp(n), u2, x)[1]; }
+
+   // Modal gain for a strike at x_strike and a pickup at x_pickup, both in metres from the left end.
+   double gain(std::size_t n, double x_strike, double x_pickup) const {
+      const double L = bar.get_length();
+      return W(n, x_strike / L) * W(n, x_pickup / L);
+   }
+
+   double get_s2() const { return s2; }
+   double get_upsilon2() const { return u2; }
+   double get_wbar_c() const { return critical_wbar(s2, u2); }
+   double get_a_c() const { return critical_a(s2, u2); }
+
+private:
+   Dispersion disp(std::size_t n) const { return {a[n], b[n], static_cast<bool>(above[n])}; }
+   void add_mode(double wbar_n);
+
+   Bar bar;
+   BoundaryConditions left, right;
+   double omega_max;
+   double s2, u2, c;
+
+   std::vector<double> a;     // switch to std::array for embedded
+   std::vector<double> b;
+   std::vector<char> above;
+   std::vector<double> w_bar; // w * L * sqrt(rho/E)
+   std::vector<double> w;     // [rad/s]
+   std::vector<double> res;
+   std::vector<std::array<double, 4>> C;
+};
 
 }
